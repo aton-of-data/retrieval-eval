@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+title: retrieval-eval
+message: >-
+  If you use this software or the judgment format in academic work, please cite it.
+type: software
+authors:
+  - name: retrieval-eval contributors
+repository-code: https://github.com/aton-of-data/retrieval-eval
+abstract: >-
+  A portable format for relevance judgments, a strict superset of TREC qrels that adds
+  content-addressed chunk identity, a corpus fingerprint, label provenance and strata, with two
+  reference implementations providing deterministic retrieval metrics and drift detection over
+  it.
+keywords:
+  - information retrieval
+  - evaluation
+  - relevance judgments
+  - qrels
+  - retrieval-augmented generation
+license: Apache-2.0
+version: 0.1.0
