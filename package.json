@@ -1,0 +1,28 @@
+{
+  "name": "retrieval-eval-monorepo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "typecheck": "pnpm -r typecheck",
+    "readme": "node scripts/build-readme.mjs",
+    "sync:spec": "node scripts/sync-spec.mjs",
+    "check:readme": "node scripts/build-readme.mjs --check",
+    "check:version": "node scripts/check-version.mjs",
+    "check:consistency": "pnpm check:version && pnpm check:readme",
+    "release": "pnpm check:consistency && pnpm build && changeset publish",
+    "test:coverage": "pnpm -r test:coverage"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@changesets/cli": "^2.27.9",
+    "typescript": "^5.6.3"
+  }
+}

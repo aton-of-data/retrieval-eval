@@ -1,0 +1,71 @@
+{
+  "name": "retrieval-eval",
+  "version": "0.1.0",
+  "description": "Your RAG test suite is lying to you. Portable relevance judgments (a TREC qrels superset), deterministic retrieval metrics, and drift detection that tells you which labels are still true after a re-chunk. Zero dependencies, no API key.",
+  "keywords": [
+    "rag",
+    "retrieval",
+    "evaluation",
+    "eval",
+    "rag-evaluation",
+    "ndcg",
+    "recall",
+    "precision",
+    "mrr",
+    "map",
+    "qrels",
+    "trec",
+    "information-retrieval",
+    "golden-dataset",
+    "regression-testing",
+    "ci",
+    "llm",
+    "vector-search",
+    "embeddings",
+    "reranking",
+    "benchmark",
+    "typescript"
+  ],
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "retrieval-eval": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": ["dist", "spec", "README.md", "LICENSE"],
+  "engines": {
+    "node": ">=20.11"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "node ../../scripts/sync-spec.mjs && tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@vitest/coverage-v8": "^2.1.4",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aton-of-data/retrieval-eval.git",
+    "directory": "packages/retrieval-eval"
+  },
+  "homepage": "https://github.com/aton-of-data/retrieval-eval#readme",
+  "bugs": "https://github.com/aton-of-data/retrieval-eval/issues",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}
