@@ -1,0 +1,5 @@
+# The spec is the contract between two implementations, so changes to it are reviewed as a
+# change to both.
+*                       @aton-of-data
+/spec/                  @aton-of-data
+/scripts/check_parity.py @aton-of-data

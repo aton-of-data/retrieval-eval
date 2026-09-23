@@ -1,0 +1,218 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typescript:
+    name: TypeScript (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["20", "22", "24"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test:coverage
+      - run: pnpm build
+
+  python:
+    name: Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    defaults:
+      run:
+        working-directory: python/retrieval-eval
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e ".[dev]"
+      - name: py.typed is present, or the Typing::Typed classifier is a lie
+        run: test -f src/retrieval_eval/py.typed
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy
+      - run: pytest --cov=retrieval_eval --cov-report=term-missing --cov-fail-under=85
+
+  # The claim this project rests on: both implementations are peers, not ports. They read the
+  # same spec/fixtures and must produce the same numbers, the same rendered output, the same
+  # help screens and the same exit codes. If this job fails, the spec is a lie.
+  parity:
+    name: Cross-language parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pip install -e ./python/retrieval-eval
+      - run: python3 scripts/check_parity.py
+
+  # The README's instructions, run verbatim on a clean checkout with nothing installed.
+  # Added because the first-run path broke twice in ways every other job passed straight through:
+  # `python` does not exist on macOS, and the demo assumed the package was already importable.
+  # A quickstart nobody has executed as written is not a quickstart.
+  quickstart:
+    name: Quickstart on a clean checkout
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # No pip install, no pnpm install: the demos must fall back to the in-repo source.
+      - name: python3 demo.py
+        working-directory: examples/quickstart
+        run: python3 demo.py
+
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: node demo.mjs
+        working-directory: examples/quickstart
+        run: node demo.mjs
+
+      # Both demos describe the same run, so they must print the same thing.
+      - name: the two demos agree
+        working-directory: examples/quickstart
+        run: diff <(node demo.mjs) <(python3 demo.py)
+        shell: bash
+
+      # The demo's whole claim is a 1.00 -> 0.00 -> 1.00 swing with retrieval perfect
+      # throughout. If that stops being true the demo proves nothing, so assert it.
+      - name: the collapse and the recovery both still happen
+        working-directory: examples/quickstart
+        shell: bash
+        run: |
+          out=$(python3 demo.py)
+          echo "$out"
+          grep -q "recall@3 = 0.0000" <<<"$out" || { echo "::error::no collapse"; exit 1; }
+          grep -q "a 1.00 collapse"   <<<"$out" || { echo "::error::collapse not 1.00"; exit 1; }
+          grep -q "back where it started" <<<"$out" || { echo "::error::no recovery"; exit 1; }
+          grep -q "0 still need a human"  <<<"$out" || { echo "::error::labels unrecoverable"; exit 1; }
+
+  # Four copies of the version and three copies of the README are drift problems. A tool about
+  # drift should not ship one, so they are generated and checked rather than hand-synced.
+  consistency:
+    name: Versions and generated READMEs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:version
+      - run: pnpm check:readme
+
+  # The published tarballs must contain what their manifests claim. `files: ["spec"]` silently
+  # shipped nothing for the whole of 0.1.0's development because spec/ lives at the repo root.
+  packaging:
+    name: Published artifacts contain the spec
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      - name: npm tarball carries the spec
+        working-directory: packages/retrieval-eval
+        run: |
+          npm pack --dry-run 2>&1 | tee /tmp/pack.txt
+          grep -q "spec/judgments.schema.json" /tmp/pack.txt || {
+            echo "::error::npm tarball is missing the spec"; exit 1; }
+          grep -q "spec/fixtures/basic/judgments.jsonl" /tmp/pack.txt || {
+            echo "::error::npm tarball is missing the fixtures"; exit 1; }
+
+      - name: wheel carries the spec and py.typed
+        working-directory: python/retrieval-eval
+        run: |
+          pip install build
+          python -m build
+          python - <<'EOF'
+          import glob, zipfile, sys
+          names = zipfile.ZipFile(glob.glob("dist/*.whl")[0]).namelist()
+          missing = [
+              label for label, ok in (
+                  ("py.typed", any("py.typed" in n for n in names)),
+                  ("spec", any("/spec/" in n for n in names)),
+              ) if not ok
+          ]
+          if missing:
+              sys.exit(f"wheel is missing: {', '.join(missing)}")
+          print("wheel carries py.typed and", sum("/spec/" in n for n in names), "spec files")
+          EOF
+
+  schemas:
+    name: Spec schemas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install check-jsonschema
+      - name: Schemas are valid JSON Schema
+        run: check-jsonschema --check-metaschema spec/*.schema.json
+      - name: Fixtures validate against the judgment schema
+        run: |
+          for f in spec/fixtures/*/judgments.jsonl; do
+            echo "checking $f"
+            python -c "
+          import json, sys
+          for i, line in enumerate(open('$f'), 1):
+              line = line.strip()
+              if not line:
+                  continue
+              row = json.loads(line)
+              for required in ('query_id', 'doc_uri', 'relevance'):
+                  assert required in row, f'$f:{i}: missing {required}'
+          "
+          done

@@ -1,0 +1,21 @@
+# Dev dependencies only: both packages ship with zero runtime dependencies, so the blast radius
+# of an update here is CI, never a consumer's install.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly }
+    groups:
+      dev-dependencies:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: /python/retrieval-eval
+    schedule: { interval: weekly }
+    groups:
+      dev-dependencies:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
