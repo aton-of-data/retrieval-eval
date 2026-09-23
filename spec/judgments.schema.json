@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://retrieval-eval.dev/spec/judgments.schema.json",
+  "title": "retrieval-eval judgment",
+  "description": "One relevance judgment. A judgments file is JSONL: one of these per line.",
+  "type": "object",
+  "required": ["query_id", "doc_uri", "relevance"],
+  "properties": {
+    "query_id": { "type": "string", "minLength": 1, "description": "Stable id for the query." },
+    "query": {
+      "type": "string",
+      "description": "Query text. Required on at least one row per query_id."
+    },
+    "doc_uri": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Canonical source document uri."
+    },
+    "chunk_id": {
+      "type": "string",
+      "pattern": "^c1:[0-9a-f]{32}$",
+      "description": "Content-addressed chunk id. Omit for document-level judgments."
+    },
+    "text_sha": {
+      "type": "string",
+      "pattern": "^t1:[0-9a-f]{32}$",
+      "description": "Hash of the normalized labeled text. Enables drift re-anchoring without storing text."
+    },
+    "chunk_text": {
+      "type": "string",
+      "description": "The labeled text. Enables SPLIT detection. Omit for sensitive corpora."
+    },
+    "relevance": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Graded relevance. 0 = not relevant. TREC convention: 0-3."
+    },
+    "corpus_fingerprint": {
+      "type": "string",
+      "description": "State of corpus+chunker+embedder this judgment was made against."
+    },
+    "labeled_by": {
+      "type": "string",
+      "description": "Provenance, e.g. 'human:ana' or 'synthetic:claude-haiku-4-5'. Prefix with human: or synthetic:."
+    },
+    "labeled_at": { "type": "string", "format": "date-time" },
+    "stratum": {
+      "type": "string",
+      "description": "Query category, for coverage reporting instead of averages."
+    },
+    "notes": { "type": "string" }
+  },
+  "additionalProperties": true
+}

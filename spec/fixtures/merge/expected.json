@@ -1,0 +1,21 @@
+{
+  "statuses": {
+    "m1": "MERGED",
+    "m2": "MERGED",
+    "m3": "RE_ANCHORABLE"
+  },
+  "summary": {
+    "valid": 0,
+    "re_anchorable": 1,
+    "merged": 2,
+    "split": 0,
+    "orphaned": 0,
+    "invalid_ratio": 1.0
+  },
+  "reanchor": {
+    "m1": "c1:d577264d22f91060a5abc8d3df2b1cea",
+    "m2": "c1:d577264d22f91060a5abc8d3df2b1cea",
+    "m3": "c1:59b4853f2ca27466c9d2931c73ae489c"
+  },
+  "note": "Both m1 and m2 re-anchor to the same coarser chunk: it now contains both paragraphs."
+}

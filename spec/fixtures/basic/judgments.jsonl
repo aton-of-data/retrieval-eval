@@ -1,0 +1,4 @@
+{"query_id": "q1", "query": "query q1", "doc_uri": "d1", "relevance": 2, "labeled_by": "human:fixture"}
+{"query_id": "q1", "query": "query q1", "doc_uri": "d2", "relevance": 1, "labeled_by": "human:fixture"}
+{"query_id": "q1", "query": "query q1", "doc_uri": "d3", "relevance": 0, "labeled_by": "human:fixture"}
+{"query_id": "q2", "query": "query q2", "doc_uri": "d5", "relevance": 1, "labeled_by": "human:fixture"}

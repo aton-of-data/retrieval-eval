@@ -1,0 +1,5 @@
+{"query_id": "b1", "query": "billing 1", "doc_uri": "bd1", "relevance": 1, "stratum": "billing", "labeled_by": "human:fixture"}
+{"query_id": "b2", "query": "billing 2", "doc_uri": "bd2", "relevance": 1, "stratum": "billing", "labeled_by": "human:fixture"}
+{"query_id": "b3", "query": "billing 3", "doc_uri": "bd3", "relevance": 1, "stratum": "billing", "labeled_by": "human:fixture"}
+{"query_id": "l1", "query": "legal 1", "doc_uri": "ld1", "relevance": 1, "stratum": "legal", "labeled_by": "human:fixture"}
+{"query_id": "l2", "query": "legal 2", "doc_uri": "ld2", "relevance": 1, "stratum": "legal", "labeled_by": "human:fixture"}

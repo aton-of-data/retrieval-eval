@@ -1,0 +1,22 @@
+{
+  "statuses": {
+    "q1": "VALID",
+    "q2": "RE_ANCHORABLE",
+    "q3": "SPLIT",
+    "q4": "ORPHANED"
+  },
+  "summary": {
+    "valid": 1,
+    "re_anchorable": 1,
+    "merged": 0,
+    "split": 1,
+    "orphaned": 1,
+    "invalid_ratio": 0.75
+  },
+  "reanchor": {
+    "q2": "c1:4e556228a30930f72ad70a7f040abb44"
+  },
+  "split_into": {
+    "q3": ["c1:a4d7f269f473170d90c13b7e1af802c8", "c1:26d9eb35e49d5b7b76645144e439a694"]
+  }
+}

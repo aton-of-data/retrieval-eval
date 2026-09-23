@@ -1,0 +1,32 @@
+{
+  "normalize": [
+    {
+      "in": "  hello \r\n world  ",
+      "out": "hello \n world"
+    },
+    {
+      "in": "café",
+      "out": "café"
+    },
+    {
+      "in": "\n\nx\n\n",
+      "out": "x"
+    }
+  ],
+  "text_sha": [
+    {
+      "text": "hello world",
+      "out": "t1:b94d27b9934d3e08a52e52d7da7dabfa"
+    }
+  ],
+  "chunk_id": [
+    {
+      "doc_uri": "s3://b/k",
+      "doc_revision": "v1",
+      "ordinal": 0,
+      "text": "hello world",
+      "chunker_fingerprint": "recursive/512/64",
+      "out": "c1:06095518ff131adc3d109bfcf1521efa"
+    }
+  ]
+}

@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://retrieval-eval.dev/spec/report.schema.json",
+  "title": "retrieval-eval report",
+  "description": "Results any tool may emit and any CI or dashboard may ingest.",
+  "type": "object",
+  "required": ["spec_version", "tool", "generated_at", "corpus", "judgments", "metrics", "verdict"],
+  "properties": {
+    "spec_version": {
+      "const": "1"
+    },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "corpus": {
+      "type": "object",
+      "properties": {
+        "fingerprint": {
+          "type": ["string", "null"]
+        },
+        "documents": {
+          "type": "integer"
+        },
+        "chunks": {
+          "type": "integer"
+        }
+      }
+    },
+    "judgments": {
+      "type": "object",
+      "required": ["queries", "labels"],
+      "properties": {
+        "queries": {
+          "type": "integer"
+        },
+        "labels": {
+          "type": "integer"
+        },
+        "fingerprint": {
+          "type": ["string", "null"]
+        },
+        "human_labels": {
+          "type": "integer"
+        },
+        "synthetic_labels": {
+          "type": "integer"
+        },
+        "drift": {
+          "description": "Present when judgment validity was checked against a live corpus.",
+          "type": "object",
+          "properties": {
+            "valid": {
+              "type": "integer"
+            },
+            "re_anchorable": {
+              "type": "integer"
+            },
+            "merged": {
+              "type": "integer"
+            },
+            "split": {
+              "type": "integer"
+            },
+            "orphaned": {
+              "type": "integer"
+            },
+            "invalid_ratio": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    },
+    "metrics": {
+      "description": "Metric name (e.g. 'recall@5') to measurement.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/measurement"
+      }
+    },
+    "per_stratum": {
+      "description": "MANDATORY when judgments carry strata. Averages hide broken query classes.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["n"],
+        "properties": {
+          "n": {
+            "type": "integer"
+          },
+          "metrics": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/$defs/measurement"
+            }
+          }
+        }
+      }
+    },
+    "verdict": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "enum": ["PASS", "FAIL", "INDETERMINATE"]
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "gates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["expression", "status"],
+            "properties": {
+              "expression": {
+                "type": "string"
+              },
+              "status": {
+                "enum": ["PASS", "FAIL", "INDETERMINATE"]
+              },
+              "observed": {
+                "type": "number"
+              },
+              "baseline": {
+                "type": ["number", "null"]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "measurement": {
+      "type": "object",
+      "required": ["value"],
+      "properties": {
+        "value": {
+          "type": "number"
+        },
+        "n": {
+          "type": "integer",
+          "description": "Samples. >1 for non-deterministic (LLM-judged) metrics."
+        },
+        "stdev": {
+          "type": "number"
+        },
+        "ci": {
+          "description": "REQUIRED for any LLM-judged metric. A point estimate from one sample is a measurement lie.",
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "deterministic": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

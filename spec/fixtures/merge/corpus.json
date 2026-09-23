@@ -1,0 +1,22 @@
+{
+  "corpus_fingerprint": "recursive/384",
+  "chunker_fingerprint": "recursive/384",
+  "chunks": [
+    {
+      "chunk_id": "c1:d577264d22f91060a5abc8d3df2b1cea",
+      "doc_uri": "wiki://refunds",
+      "doc_revision": "r3",
+      "ordinal": 0,
+      "text": "Annual plans may be refunded within 30 days of renewal.\n\nMonthly plans are non-refundable after the billing date.",
+      "text_sha": "t1:fe457555142c231ba419124e398f4b84"
+    },
+    {
+      "chunk_id": "c1:59b4853f2ca27466c9d2931c73ae489c",
+      "doc_uri": "wiki://refunds",
+      "doc_revision": "r3",
+      "ordinal": 1,
+      "text": "Enterprise refunds are negotiated per contract.",
+      "text_sha": "t1:4029941ea9e639a37fc53f410246171f"
+    }
+  ]
+}
