@@ -77,12 +77,12 @@ jobs:
       - run: pip install -e ./python/retrieval-eval
       - run: python3 scripts/check_parity.py
 
-  # The README's instructions, run verbatim on a clean checkout with nothing installed.
-  # Added because the first-run path broke twice in ways every other job passed straight through:
-  # `python` does not exist on macOS, and the demo assumed the package was already importable.
-  # A quickstart nobody has executed as written is not a quickstart.
-  quickstart:
-    name: Quickstart on a clean checkout
+  # Every runnable example, on a clean checkout with nothing installed. Added because the
+  # first-run path broke twice in ways every other job passed straight through: `python` does
+  # not exist on macOS, and the demo assumed the package was already importable. An example
+  # nobody has executed as written is not an example.
+  examples:
+    name: Examples on a clean checkout
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -127,6 +127,93 @@ jobs:
           grep -q "a 1.00 collapse"   <<<"$out" || { echo "::error::collapse not 1.00"; exit 1; }
           grep -q "back where it started" <<<"$out" || { echo "::error::no recovery"; exit 1; }
           grep -q "0 still need a human"  <<<"$out" || { echo "::error::labels unrecoverable"; exit 1; }
+
+      # The scenario examples, each asserted on the claim its README makes.
+      - name: support-bot, an average hiding a broken query class
+        shell: bash
+        run: |
+          out=$(examples/support-bot/run.sh)
+          echo "$out"
+          grep -q "legal" <<<"$out" || { echo "::error::no stratum table"; exit 1; }
+          grep -q "worst stratum recall@3 is 0.0000" <<<"$out" || {
+            echo "::error::the hidden failure stopped being hidden"; exit 1; }
+          grep -q "re-anchored 13 label(s)" <<<"$out" || {
+            echo "::error::merged labels no longer recover"; exit 1; }
+
+      - name: reranker-vs-chunker, localizing a failure
+        shell: bash
+        run: |
+          out=$(examples/reranker-vs-chunker/run.sh)
+          echo "$out"
+          grep -q "recall@5         0.3333" <<<"$out" || { echo "::error::k=5 changed"; exit 1; }
+          grep -q "recall@20        1.0000" <<<"$out" || { echo "::error::k=20 changed"; exit 1; }
+          grep -q "recall@5         1.0000" <<<"$out" || { echo "::error::rerank no longer fixes it"; exit 1; }
+
+      - name: graded-relevance, the threshold is a product decision
+        shell: bash
+        run: |
+          out=$(examples/graded-relevance/run.sh)
+          echo "$out"
+          grep -q "mrr@3            1.0000" <<<"$out" || {
+            echo "::error::the lenient reading changed"; exit 1; }
+          grep -q "mrr@3            0.5667" <<<"$out" || {
+            echo "::error::the strict reading changed"; exit 1; }
+          grep -q "not scored, no label at the relevance threshold" <<<"$out" || {
+            echo "::error::an unscored stratum is no longer reported"; exit 1; }
+
+      - name: judged-metrics, error bars and a third verdict
+        shell: bash
+        run: |
+          out=$(python3 examples/judged-metrics/demo.py)
+          echo "$out"
+          grep -q "INDETERMINATE" <<<"$out" || {
+            echo "::error::one sample no longer yields INDETERMINATE"; exit 1; }
+          grep -q "95% interval   \[0.6037, 0.9963\]" <<<"$out" || {
+            echo "::error::the interval changed"; exit 1; }
+          diff <(node examples/judged-metrics/demo.mjs) <(python3 examples/judged-metrics/demo.py)
+
+      - name: custom-harness, the library without the CLI
+        shell: bash
+        run: |
+          out=$(python3 examples/custom-harness/harness.py)
+          echo "$out"
+          grep -q "q07  recall=0.00" <<<"$out" || {
+            echo "::error::per-query detail changed"; exit 1; }
+          diff <(node examples/custom-harness/harness.mjs) <(python3 examples/custom-harness/harness.py)
+
+      - name: beir-qrels, a public collection in and back out
+        shell: bash
+        run: |
+          out=$(examples/beir-qrels/run.sh)
+          echo "$out"
+          grep -q "no-chunk-ids" <<<"$out" || { echo "::error::import stopped warning"; exit 1; }
+          grep -q "qa1 0 d3 2"   <<<"$out" || { echo "::error::qrels round trip changed"; exit 1; }
+
+  # The framework integrations are not executed: running them would mean installing nine
+  # frameworks and a database into a pipeline whose point is that it needs none of that. They
+  # are still code, so they are still checked.
+  framework-examples:
+    name: Framework examples are valid code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff
+      - name: Python examples compile and lint
+        run: |
+          python -m compileall -q examples/frameworks
+          ruff check --isolated --select E,F,W,I,UP,B,SIM --line-length 100 examples/frameworks
+      - name: JavaScript examples parse
+        run: |
+          for file in examples/frameworks/*.mjs; do node --check "$file"; done
+      - name: Shell examples parse
+        run: |
+          for file in examples/*/run.sh examples/cli.sh; do bash -n "$file"; done
 
   # Four copies of the version and three copies of the README are drift problems. A tool about
   # drift should not ship one, so they are generated and checked rather than hand-synced.
@@ -189,6 +276,26 @@ jobs:
               sys.exit(f"wheel is missing: {', '.join(missing)}")
           print("wheel carries py.typed and", sum("/spec/" in n for n in names), "spec files")
           EOF
+
+      # Every other job runs the CLI from the source tree. A user runs it from an install, through
+      # a symlink in node_modules/.bin, and 0.1.0 was one command away from shipping a binary
+      # that exited 0 and printed nothing there. Install both artifacts and run them as a user would.
+      - name: installed CLIs run and agree
+        run: |
+          app=$(mktemp -d)
+          (cd packages/retrieval-eval && npm pack --pack-destination "$app")
+          (cd "$app" && npm init -y >/dev/null && npm install ./retrieval-eval-*.tgz)
+          python -m venv "$app/venv"
+          "$app/venv/bin/pip" install python/retrieval-eval/dist/*.whl
+          ts=$("$app/node_modules/.bin/retrieval-eval" --version)
+          py=$("$app/venv/bin/retrieval-eval" --version)
+          echo "npm: $ts  pypi: $py"
+          [ -n "$ts" ] || { echo "::error::installed npm CLI printed nothing"; exit 1; }
+          [ "$ts" = "$py" ] || { echo "::error::installed CLIs disagree"; exit 1; }
+          args=(score --judgments spec/fixtures/basic/judgments.jsonl
+                --run spec/fixtures/basic/run.jsonl -k 3 --color never)
+          diff <("$app/node_modules/.bin/retrieval-eval" "${args[@]}"; echo "exit $?") \
+               <("$app/venv/bin/retrieval-eval" "${args[@]}"; echo "exit $?")
 
   schemas:
     name: Spec schemas
