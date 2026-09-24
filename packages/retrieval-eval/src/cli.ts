@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import { drift, fix } from "./drift.js";
 import { evaluateGates, parseGate, worseStatus } from "./gate.js";
-import { COMMANDS, COMMAND_HELP, type Command, ROOT_HELP } from "./help.js";
+import { COMMAND_HELP, COMMANDS, type Command, ROOT_HELP } from "./help.js";
 import {
   byCodePoint,
   parseCorpus,
@@ -14,9 +14,9 @@ import {
   validate,
 } from "./judgments.js";
 import { fromQrels, toQrels, toTrecRun } from "./qrels.js";
-import { TOOL_VERSION, buildReport } from "./report.js";
+import { buildReport, TOOL_VERSION } from "./report.js";
 import type { DriftResult, Report } from "./types.js";
-import { type ColorWhen, bar, heading, num, paint, pct, setColor } from "./ui.js";
+import { bar, type ColorWhen, heading, num, paint, pct, setColor } from "./ui.js";
 
 /** Where the CLI writes. Injected so the command surface is testable without a subprocess. */
 export interface Io {
