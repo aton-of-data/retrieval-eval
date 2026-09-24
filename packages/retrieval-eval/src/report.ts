@@ -1,6 +1,6 @@
 import { byCodePoint, validate } from "./judgments.js";
-import { score, scoreByStratum } from "./metrics.js";
 import type { MetricOptions } from "./metrics.js";
+import { score, scoreByStratum } from "./metrics.js";
 import type { Corpus, DriftResult, Judgment, Report, RunEntry } from "./types.js";
 
 export const TOOL_NAME = "retrieval-eval";

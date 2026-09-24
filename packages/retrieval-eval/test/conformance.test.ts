@@ -274,7 +274,7 @@ describe("summarize: error bars on a non-deterministic metric", () => {
     report.metrics.faithfulness = summarize([0, 0, 1]);
     const evaluated = evaluateGates({ report, gates: [parseGate("faithfulness:ci-lower:0")] });
     expect(evaluated.status).toBe("FAIL");
-    expect((report.metrics.faithfulness?.ci as [number, number])[0]).toBeLessThan(0);
+    expect(report.metrics.faithfulness?.ci?.[0]).toBeLessThan(0);
   });
 });
 

@@ -21,8 +21,8 @@
     "test:coverage": "pnpm -r test:coverage"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "@changesets/cli": "^2.27.9",
-    "typescript": "^5.6.3"
+    "@biomejs/biome": "^2.5.14",
+    "@changesets/cli": "^2.31.1",
+    "typescript": "^5.9.3"
   }
 }

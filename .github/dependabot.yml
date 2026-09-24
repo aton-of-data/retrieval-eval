@@ -8,6 +8,23 @@ updates:
     groups:
       dev-dependencies:
         patterns: ["*"]
+    # Held majors. Node 20 is still in the support matrix, so the tools that test and build on it
+    # have to run on it. Lift each entry when its reason goes away.
+    ignore:
+      # 7 ships a native compiler without the JavaScript API tsup's declaration bundler needs.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+      # 5 requires Node 22.12 or later.
+      - dependency-name: vitest
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitest/*"
+        update-types: ["version-update:semver-major"]
+      # 3 requires Node 22.11 or later.
+      - dependency-name: "@changesets/cli"
+        update-types: ["version-update:semver-major"]
+      # Types track the oldest supported Node, or they offer APIs it does not have.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: pip
     directory: /python/retrieval-eval
