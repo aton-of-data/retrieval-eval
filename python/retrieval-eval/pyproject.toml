@@ -66,8 +66,8 @@ retrieval-eval = "retrieval_eval.cli:main"
 packages = ["src/retrieval_eval"]
 
 # The spec travels with the implementation. `scripts/sync-spec.mjs` copies the canonical
-# repo-root spec/ here before a build; without it these paths simply do not exist and the
-# build still succeeds, which is why CI runs the sync first and asserts the result.
+# repo-root spec/ here before a build. Without it the path does not exist and hatchling refuses
+# to build at all, editable installs included, so every CI job that installs runs the sync first.
 [tool.hatch.build.targets.wheel.force-include]
 "spec" = "retrieval_eval/spec"
 

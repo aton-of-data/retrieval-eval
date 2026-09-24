@@ -9,7 +9,8 @@ below: a change is not done when one language passes, it is done when both agree
 pnpm install                                    # TypeScript
 pnpm -r build && pnpm -r test
 
-cd python/retrieval-eval                        # Python
+node scripts/sync-spec.mjs                      # Python: the wheel bundles spec/
+cd python/retrieval-eval
 python3 -m venv .venv && ./.venv/bin/pip install -e ".[dev]"
 ./.venv/bin/pytest
 ```
