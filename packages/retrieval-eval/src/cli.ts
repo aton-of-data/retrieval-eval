@@ -3,9 +3,10 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import { drift, fix } from "./drift.js";
-import { evaluateGates, parseGate } from "./gate.js";
+import { evaluateGates, parseGate, worseStatus } from "./gate.js";
 import { COMMANDS, COMMAND_HELP, type Command, ROOT_HELP } from "./help.js";
 import {
+  byCodePoint,
   parseCorpus,
   parseJudgments,
   parseRun,
@@ -286,7 +287,9 @@ function runScore(values: Values["values"], io: Io): number {
   if (gates.length > 0) {
     const baseline = values.baseline ? (JSON.parse(read(values.baseline)) as Report) : undefined;
     const evaluated = evaluateGates({ report, baseline, gates });
-    report.verdict.status = evaluated.status;
+    // The base verdict already carries findings no gate looked at, such as a judgment set
+    // `validate` rejects, so a passing gate does not clear them.
+    report.verdict.status = worseStatus(report.verdict.status, evaluated.status);
     report.verdict.gates = evaluated.results;
     report.verdict.reasons = [...report.verdict.reasons, ...evaluated.reasons];
   }
@@ -308,6 +311,10 @@ function printScore(io: Io, report: Report): void {
   }
   out += "\n\n";
 
+  if (Object.keys(report.metrics).length === 0) {
+    out += `  ${paint("dim", "no metric was computed")}\n`;
+  }
+
   for (const [name, measurement] of Object.entries(report.metrics)) {
     const ci = measurement.ci
       ? paint("dim", `  [${num(measurement.ci[0])}, ${num(measurement.ci[1])}]`)
@@ -316,19 +323,31 @@ function printScore(io: Io, report: Report): void {
   }
 
   if (report.per_stratum) {
-    const primary = Object.keys(report.metrics).find((m) => m.startsWith("recall@")) ?? "mrr";
-    const ranked = Object.entries(report.per_stratum)
-      .map(([name, stratum]) => ({
-        name,
-        n: stratum.n,
-        value: stratum.metrics[primary]?.value ?? 0,
-      }))
-      .sort((a, b) => a.value - b.value || a.name.localeCompare(b.name));
+    const names = Object.keys(report.metrics);
+    const primary = names.find((name) => name.startsWith("recall@")) ?? names[0] ?? "";
+    const entries = Object.entries(report.per_stratum).map(([name, stratum]) => ({
+      name,
+      n: stratum.n,
+      value: stratum.metrics[primary]?.value ?? 0,
+    }));
+    // A stratum with no scored query has no number to compare, so it is listed after the ones
+    // that do and never marked worst. Ties break by code point, not `localeCompare`: collation
+    // is locale-dependent, so the same build would order these differently on another machine
+    // and differently again from Python.
+    const ranked = entries
+      .filter((stratum) => stratum.n > 0)
+      .sort((a, b) => a.value - b.value || byCodePoint(a.name, b.name));
+    const unscored = entries
+      .filter((stratum) => stratum.n === 0)
+      .sort((a, b) => byCodePoint(a.name, b.name));
 
-    out += heading(`${primary} by stratum`);
+    out += heading(primary ? `${primary} by stratum` : "strata");
     for (const [index, stratum] of ranked.entries()) {
       const flag = index === 0 && ranked.length > 1 ? paint("yellow", "  worst") : "";
       out += `  ${paint("dim", "·")} ${stratum.name.padEnd(20)} ${num(stratum.value)}  ${paint("dim", bar(stratum.value))}  ${paint("dim", `n=${stratum.n}`)}${flag}\n`;
+    }
+    for (const stratum of unscored) {
+      out += `  ${paint("dim", "·")} ${stratum.name.padEnd(20)} ${paint("dim", "not scored, no label at the relevance threshold")}\n`;
     }
   }
 

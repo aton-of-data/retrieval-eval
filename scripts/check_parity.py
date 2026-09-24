@@ -41,6 +41,10 @@ class Case:
 
 
 BASIC = ["--judgments", "basic/judgments.jsonl", "--run", "basic/run.jsonl"]
+DUPLICATE = [
+    "--judgments", "duplicate-ranking/judgments.jsonl",
+    "--run", "duplicate-ranking/run.jsonl",
+]
 
 CASES: list[Case] = [
     # Reports, compared as data.
@@ -65,9 +69,52 @@ CASES: list[Case] = [
         ["score", "--judgments", "drift/judgments.jsonl", "--run", "basic/run.jsonl", "--corpus", "drift/corpus.json", "--json"],
     ),
     Case("validate", ["validate", "--judgments", "strata/judgments.jsonl", "--json"]),
+    # A ranking that repeats a key. Counted naively these metrics leave their range, so both
+    # implementations must drop the repeat and both must say that they did.
+    Case("score-duplicate-ranking", ["score", *DUPLICATE, "-k", "5", "--json"]),
+    Case(
+        "score-duplicate-ranking-gated",
+        ["score", *DUPLICATE, "-k", "5", "--gate", "recall@5:0.9", "--json"],
+        codes=(1,),
+    ),
+    # A judgment set `validate` rejects. `score` must not report PASS over it, and a gate that
+    # passes must not clear the finding it never looked at.
+    Case(
+        "score-unsound-judgments",
+        [
+            "score",
+            "--judgments", "unsound-judgments/judgments.jsonl",
+            "--run", "unsound-judgments/run.jsonl",
+            "-k", "2",
+            "--gate", "recall@2:0.1",
+            "--json",
+        ],
+        codes=(1,),
+    ),
+    # Query ids and strata arriving out of order. Insertion order in one implementation and
+    # sorted order in the other is a parity break no already-sorted fixture can catch.
+    Case(
+        "validate-unsorted-queries",
+        ["validate", "--judgments", "unsorted-queries/judgments.jsonl", "--json"],
+    ),
+    Case(
+        "score-no-positives",
+        ["score", "--judgments", "no-positives/judgments.jsonl", "--run", "no-positives/run.jsonl", "-k", "3", "--json"],
+    ),
+    Case(
+        "score-threshold",
+        ["score", *BASIC, "-k", "3", "--threshold", "2", "--json"],
+    ),
+    Case(
+        "render-score-no-positives",
+        ["score", "--judgments", "no-positives/judgments.jsonl", "--run", "no-positives/run.jsonl", "-k", "3"],
+        "text",
+    ),
     # Conversions and rendered output, compared as text.
     Case("convert-qrels", ["convert", "--judgments", "basic/judgments.jsonl", "--to", "qrels"], "text"),
     Case("convert-trec-run", ["convert", "--run", "basic/run.jsonl", "--to", "trec-run"], "text"),
+    Case("convert-from-beir-qrels", ["convert", "--qrels", "qrels/beir.tsv", "--to", "judgments"], "text"),
+    Case("convert-from-trec-qrels", ["convert", "--qrels", "qrels/trec.qrels", "--to", "judgments", "--as-chunk-ids"], "text"),
     Case("render-drift", ["drift", "--judgments", "drift/judgments.jsonl", "--corpus", "drift/corpus.json"], "text"),
     Case("render-drift-doc-level", ["drift", "--judgments", "basic/judgments.jsonl", "--corpus", "merge/corpus.json"], "text"),
     Case("render-score", ["score", *BASIC, "-k", "3"], "text"),
@@ -77,6 +124,77 @@ CASES: list[Case] = [
         "text",
     ),
     Case("render-validate", ["validate", "--judgments", "strata/judgments.jsonl"], "text"),
+    Case("render-score-duplicate-ranking", ["score", *DUPLICATE, "-k", "5"], "text"),
+    Case(
+        "render-score-unsound-judgments",
+        [
+            "score",
+            "--judgments", "unsound-judgments/judgments.jsonl",
+            "--run", "unsound-judgments/run.jsonl",
+            "-k", "2",
+        ],
+        "text",
+        codes=(1,),
+    ),
+    Case(
+        "render-validate-unsorted-queries",
+        ["validate", "--judgments", "unsorted-queries/judgments.jsonl"],
+        "text",
+    ),
+    # The stratum table. `localeCompare` ordered these by locale, which disagreed with Python
+    # and with another machine running the same build.
+    Case(
+        "render-score-stratum-order",
+        [
+            "score",
+            "--judgments", "stratum-order/judgments.jsonl",
+            "--run", "stratum-order/run.jsonl",
+            "-k", "3",
+            "--threshold", "2",
+        ],
+        "text",
+    ),
+    Case(
+        "score-stratum-order",
+        [
+            "score",
+            "--judgments", "stratum-order/judgments.jsonl",
+            "--run", "stratum-order/run.jsonl",
+            "-k", "3",
+            "--threshold", "2",
+            "--json",
+        ],
+    ),
+    Case(
+        "render-score-threshold",
+        ["score", "--judgments", "strata/judgments.jsonl", "--run", "strata/run.jsonl", "-k", "3", "--threshold", "2"],
+        "text",
+    ),
+    Case(
+        "score-nothing-scored",
+        [
+            "score",
+            "--judgments", "nothing-scored/judgments.jsonl",
+            "--run", "nothing-scored/run.jsonl",
+            "-k", "3",
+            "--threshold", "2",
+            "--json",
+        ],
+        codes=(1,),
+    ),
+    Case(
+        "render-score-nothing-scored",
+        [
+            "score",
+            "--judgments", "nothing-scored/judgments.jsonl",
+            "--run", "nothing-scored/run.jsonl",
+            "-k", "3",
+            "--threshold", "2",
+            "--gate", "recall@3:0.5",
+        ],
+        "text",
+        codes=(1,),
+    ),
     # Help is part of the interface. Two CLIs that document themselves differently are two CLIs.
     Case("help-root", ["--help"], "text"),
     Case("help-bare", [], "text", codes=(2,)),
@@ -89,6 +207,33 @@ CASES: list[Case] = [
     # Failures, where wording and exit code both matter.
     Case("missing-file", ["drift", "--judgments", "nope.jsonl", "--corpus", "nope.json"], "error", codes=(2,)),
     Case("bad-gate", ["score", *BASIC, "--gate", "recall@3"], "error", codes=(2,)),
+    # `parseFloat` read '0.5abc' as 0.5 while `float` rejected it; `float` read 'nan' and
+    # 'infinity' while `parseFloat` rejected them. A threshold the two cannot agree on is
+    # worse than no threshold, so all three are refused by both.
+    Case("bad-gate-trailing", ["score", *BASIC, "--gate", "recall@3:0.5abc"], "error", codes=(2,)),
+    Case("bad-gate-nan", ["score", *BASIC, "--gate", "recall@3:nan"], "error", codes=(2,)),
+    Case("bad-gate-infinity", ["score", *BASIC, "--gate", "recall@3:infinity"], "error", codes=(2,)),
+    # A run file that no longer says what it means.
+    Case(
+        "bad-run-duplicate-query",
+        [
+            "score",
+            "--judgments", "duplicate-ranking/judgments.jsonl",
+            "--run", "duplicate-ranking/run-duplicate-query.jsonl",
+        ],
+        "error",
+        codes=(2,),
+    ),
+    Case(
+        "bad-run-non-string-key",
+        [
+            "score",
+            "--judgments", "duplicate-ranking/judgments.jsonl",
+            "--run", "duplicate-ranking/run-non-string-key.jsonl",
+        ],
+        "error",
+        codes=(2,),
+    ),
     Case("unknown-command", ["frobnicate"], "error", codes=(2,)),
     Case("near-miss-command", ["drif"], "error", codes=(2,)),
     Case("unknown-option", ["drift", "--nope"], "error", codes=(2,)),
@@ -102,7 +247,9 @@ CASES: list[Case] = [
 def resolve(argv: list[str]) -> list[str]:
     """Turn fixture-relative paths into absolute ones."""
     return [
-        str(FIXTURES / arg) if "/" in arg and arg.endswith((".jsonl", ".json")) else arg
+        str(FIXTURES / arg)
+        if "/" in arg and arg.endswith((".jsonl", ".json", ".tsv", ".qrels"))
+        else arg
         for arg in argv
     ]
 

@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import NoReturn
 
 from .drift import drift, fix
-from .gate import evaluate_gates, parse_gate
+from .gate import evaluate_gates, parse_gate, worse_status
 from .help_text import COMMAND_HELP, COMMANDS, ROOT_HELP
 from .judgments import parse_corpus, parse_judgments, parse_run, serialize_judgments, validate
 from .metrics import StratumScore
@@ -213,6 +213,9 @@ def _print_score(report: Report) -> None:
         )
     out.append("\n\n")
 
+    if not report.metrics:
+        out.append(f"  {paint('dim', 'no metric was computed')}\n")
+
     for name, measurement in report.metrics.items():
         ci = ""
         if measurement.ci is not None:
@@ -220,26 +223,34 @@ def _print_score(report: Report) -> None:
         out.append(f"  {name.ljust(16)} {num(measurement.value)}{ci}\n")
 
     if report.per_stratum:
-        primary = next((m for m in report.metrics if m.startswith("recall@")), "mrr")
+        names = list(report.metrics)
+        primary = next(
+            (name for name in names if name.startswith("recall@")), names[0] if names else ""
+        )
 
         def stratum_value(stratum: StratumScore) -> float:
             measurement = stratum.metrics.get(primary)
             return measurement.value if measurement is not None else 0.0
 
-        ranked = sorted(
-            (
-                (name, stratum.n, stratum_value(stratum))
-                for name, stratum in report.per_stratum.items()
-            ),
-            key=lambda row: (row[2], row[0]),
-        )
-        out.append(heading(f"{primary} by stratum"))
+        entries = [
+            (name, stratum.n, stratum_value(stratum))
+            for name, stratum in report.per_stratum.items()
+        ]
+        # A stratum with no scored query has no number to compare, so it is listed after the
+        # ones that do and never marked worst.
+        ranked = sorted((row for row in entries if row[1] > 0), key=lambda row: (row[2], row[0]))
+        unscored = sorted(row for row in entries if row[1] == 0)
+
+        out.append(heading(f"{primary} by stratum" if primary else "strata"))
         for index, (name, n, value) in enumerate(ranked):
             flag = paint("yellow", "  worst") if index == 0 and len(ranked) > 1 else ""
             out.append(
                 f"  {paint('dim', '·')} {name.ljust(20)} {num(value)}  "
                 f"{paint('dim', bar(value))}  {paint('dim', f'n={n}')}{flag}\n"
             )
+        for name, _n, _value in unscored:
+            note = "not scored, no label at the relevance threshold"
+            out.append(f"  {paint('dim', '·')} {name.ljust(20)} {paint('dim', note)}\n")
 
     drift_info = report.judgments.get("drift")
     if drift_info and drift_info.get("invalid_ratio", 0) > 0:
@@ -289,7 +300,9 @@ def _cmd_score(args: argparse.Namespace) -> int:
         gates = [parse_gate(expression) for expression in args.gate]
         baseline = Report.from_dict(json.loads(_read(args.baseline))) if args.baseline else None
         evaluated = evaluate_gates(report, gates, baseline)
-        report.verdict.status = evaluated.status
+        # The base verdict already carries findings no gate looked at, such as a judgment set
+        # `validate` rejects, so a passing gate does not clear them.
+        report.verdict.status = worse_status(report.verdict.status, evaluated.status)
         report.verdict.gates = evaluated.results
         report.verdict.reasons = [*report.verdict.reasons, *evaluated.reasons]
 

@@ -122,23 +122,23 @@ describe("colour", () => {
   const args = ["validate", "--judgments", fixture("basic", "judgments.jsonl")];
 
   it("stays plain when stdout is not a terminal", () => {
-    expect(run(...args).stdout).not.toContain("[");
+    expect(run(...args).stdout).not.toContain("\u001b[");
   });
 
   it("honours NO_COLOR on a terminal", () => {
     const io = capture({ isTty: true, env: { NO_COLOR: "1" } });
     main(args, io);
-    expect(io.stdout).not.toContain("[");
+    expect(io.stdout).not.toContain("\u001b[");
   });
 
   it("obeys --color over both", () => {
     const always = capture();
     main([...args, "--color", "always"], always);
-    expect(always.stdout).toContain("[");
+    expect(always.stdout).toContain("\u001b[");
 
     const never = capture({ isTty: true, env: {} });
     main([...args, "--color", "never"], never);
-    expect(never.stdout).not.toContain("[");
+    expect(never.stdout).not.toContain("\u001b[");
   });
 
   it("rejects a colour mode it does not have", () => {
