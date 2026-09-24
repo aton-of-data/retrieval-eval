@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>retrieval-eval</title>
+<meta name="description" content="{{description}}">
+<meta property="og:title" content="retrieval-eval">
+<meta property="og:description" content="Every re-chunk quietly invalidates part of your RAG test suite. retrieval-eval tells you which labels are still true.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230d1117'/><text x='5' y='22' font-family='monospace' font-size='16' fill='%233fb950'>&gt;_</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fbfbf9;
+    --fg: #1c1d1f;
+    --muted: #6b6f76;
+    --faint: #e7e6e1;
+    --panel: #f3f2ee;
+    --accent: #1a7f37;
+    --warn: #9a6700;
+    --bad: #cf222e;
+    --link: #0b62d6;
+    --code-kw: #cf222e;
+    --code-str: #0a3069;
+    --code-fn: #8250df;
+    --code-const: #0550ae;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1117;
+      --fg: #d7dce2;
+      --muted: #8b949e;
+      --faint: #21262d;
+      --panel: #161b22;
+      --accent: #3fb950;
+      --warn: #d29922;
+      --bad: #f85149;
+      --link: #58a6ff;
+      --code-kw: #ff7b72;
+      --code-str: #a5d6ff;
+      --code-fn: #d2a8ff;
+      --code-const: #79c0ff;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117; --fg: #d7dce2; --muted: #8b949e; --faint: #21262d; --panel: #161b22;
+    --accent: #3fb950; --warn: #d29922; --bad: #f85149; --link: #58a6ff;
+    --code-kw: #ff7b72; --code-str: #a5d6ff; --code-fn: #d2a8ff; --code-const: #79c0ff;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-padding-top: 72px; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.7 Inter, system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent); color: var(--bg); }
+
+  .bar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; gap: 16px;
+    padding: 12px 16px;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--faint);
+    font: 500 13px/1 "JetBrains Mono", ui-monospace, monospace;
+  }
+  .bar .who { color: var(--muted); }
+  .bar .who b { color: var(--fg); font-weight: 700; }
+  .bar .who .caret { color: var(--accent); animation: blink 1.1s steps(1) infinite; }
+  .bar nav { margin-left: auto; display: flex; gap: 14px; }
+  .bar a { color: var(--muted); text-decoration: none; }
+  .bar a:hover { color: var(--accent); }
+  .bar .ver { color: var(--accent); border: 1px solid var(--faint); border-radius: 4px; padding: 3px 6px; }
+  @keyframes blink { 50% { opacity: 0; } }
+  @media (max-width: 560px) { .bar .who .path { display: none; } .bar nav a.opt { display: none; } }
+
+  main { max-width: 780px; margin: 0 auto; padding: 48px 16px 32px; }
+
+  h1, h2, h3, h4 { font-family: "JetBrains Mono", ui-monospace, monospace; line-height: 1.3; letter-spacing: -0.01em; }
+  .markdown-heading .anchor { display: none; }
+  h1 { font-size: clamp(1.8rem, 7vw, 2.6rem); margin: 0 0 0.4em; white-space: nowrap; }
+  h1::before { content: "$ "; color: var(--accent); }
+  h2 {
+    font-size: 1.25rem; margin: 3.2rem 0 1rem; padding-top: 1.6rem;
+    border-top: 1px dashed var(--faint);
+  }
+  h2::before { content: "## "; color: var(--muted); font-weight: 400; }
+  h3 { font-size: 1.05rem; margin: 2rem 0 0.6rem; }
+  h3::before { content: "### "; color: var(--muted); font-weight: 400; }
+
+  div[align="center"] { text-align: center; }
+  div[align="center"] p { color: var(--muted); }
+  div[align="center"] p:first-of-type { color: var(--fg); font-size: 1.1rem; }
+  div[align="center"] img { height: 20px; margin: 2px; vertical-align: middle; }
+  hr { border: 0; border-top: 1px solid var(--faint); margin: 2.5rem 0; }
+
+  p, ul, ol, table, pre, blockquote { margin: 0 0 1.1rem; }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  strong { font-weight: 600; }
+  li + li { margin-top: 0.3rem; }
+
+  code, pre { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.86em; }
+  :not(pre) > code {
+    background: var(--panel); border: 1px solid var(--faint);
+    padding: 0.1em 0.35em; border-radius: 4px;
+  }
+  pre {
+    background: var(--panel); border: 1px solid var(--faint); border-radius: 8px;
+    padding: 16px 18px; overflow-x: auto; line-height: 1.55;
+  }
+  .highlight { position: relative; }
+  .highlight-source-shell pre, .highlight-shell pre { border-left: 3px solid var(--accent); }
+  .pl-c { color: var(--muted); font-style: italic; }
+  .pl-k, .pl-s1 .pl-k { color: var(--code-kw); }
+  .pl-s, .pl-pds, .pl-sr { color: var(--code-str); }
+  .pl-en, .pl-e { color: var(--code-fn); }
+  .pl-c1, .pl-smi .pl-c1, .pl-v, .pl-ent { color: var(--code-const); }
+  .copy {
+    position: absolute; top: 8px; right: 8px;
+    font: 500 11px/1 "JetBrains Mono", monospace; color: var(--muted);
+    background: var(--bg); border: 1px solid var(--faint); border-radius: 4px;
+    padding: 5px 7px; cursor: pointer; opacity: 0; transition: opacity 0.15s;
+  }
+  .highlight:hover .copy, .copy:focus-visible { opacity: 1; }
+  .term .ok { color: var(--accent); }
+  .term .warn { color: var(--warn); }
+  .term .bad { color: var(--bad); }
+
+  table { display: block; overflow-x: auto; border-collapse: collapse; font-size: 0.93rem; }
+  th, td { border-bottom: 1px solid var(--faint); padding: 8px 14px 8px 0; text-align: left; vertical-align: top; }
+  th { font-family: "JetBrains Mono", monospace; font-size: 0.8rem; font-weight: 500; color: var(--muted); text-transform: lowercase; }
+
+  blockquote { margin-left: 0; padding: 2px 16px; border-left: 3px solid var(--faint); color: var(--muted); }
+  .markdown-alert { padding: 8px 16px; border-left: 3px solid var(--link); background: var(--panel); border-radius: 0 6px 6px 0; margin-bottom: 1.1rem; }
+  .markdown-alert-title { font: 600 0.8rem "JetBrains Mono", monospace; text-transform: lowercase; }
+  .markdown-alert svg { display: none; }
+  img { max-width: 100%; }
+
+  footer {
+    max-width: 780px; margin: 0 auto; padding: 24px 16px 48px;
+    border-top: 1px solid var(--faint);
+    font: 12px/1.6 "JetBrains Mono", monospace; color: var(--muted);
+  }
+  footer a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+</style>
+</head>
+<body>
+<header class="bar">
+  <span class="who"><span class="path">~/</span><b>retrieval-eval</b> <span class="caret">▍</span></span>
+  <span class="ver">v{{version}}</span>
+  <nav>
+    <a class="opt" href="https://www.npmjs.com/package/retrieval-eval">npm</a>
+    <a class="opt" href="https://pypi.org/project/retrieval-eval/">pypi</a>
+    <a href="{{repo}}">github ↗</a>
+  </nav>
+</header>
+<main>
+{{content}}
+</main>
+<footer>
+  rendered from <a href="{{repo}}/blob/main/README.md">README.md</a> @ <a href="{{repo}}/commit/{{sha}}">{{sha}}</a> · apache-2.0 · zero runtime deps
+</footer>
+<script>
+  // Colour the drift report the way the CLI does: ok / ! / x in the gutter.
+  for (const pre of document.querySelectorAll("main pre")) {
+    if (pre.closest(".highlight")) continue;
+    pre.classList.add("term");
+    pre.innerHTML = pre.innerHTML.replace(/^(\s*)(ok|!|x)(\s)/gm, (_m, s, mark, t) => {
+      const cls = mark === "ok" ? "ok" : mark === "!" ? "warn" : "bad";
+      return `${s}<span class="${cls}">${mark}</span>${t}`;
+    });
+  }
+  for (const block of document.querySelectorAll(".highlight")) {
+    const button = document.createElement("button");
+    button.className = "copy";
+    button.textContent = "copy";
+    button.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(block.querySelector("pre").innerText);
+        button.textContent = "copied";
+      } catch {
+        button.textContent = "⌘c";
+      }
+      setTimeout(() => { button.textContent = "copy"; }, 1400);
+    });
+    block.append(button);
+  }
+</script>
+</body>
+</html>
