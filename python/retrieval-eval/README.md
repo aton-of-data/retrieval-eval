@@ -2,8 +2,11 @@
 
 # retrieval-eval
 
-**Portable relevance judgments, deterministic retrieval metrics, and the one report no other
-evaluation tool produces: which of your labels are still true.**
+**Every re-chunk quietly invalidates part of your RAG test suite.<br>
+`retrieval-eval` tells you which labels are still true, and repairs the ones it can.**
+
+Label drift detection · deterministic retrieval metrics · a portable, qrels-compatible judgment format<br>
+Zero dependencies · no API key · TypeScript and Python
 
 [![CI](https://github.com/aton-of-data/retrieval-eval/actions/workflows/ci.yml/badge.svg)](https://github.com/aton-of-data/retrieval-eval/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/retrieval-eval?logo=npm&color=cb3837)](https://www.npmjs.com/package/retrieval-eval)
@@ -14,6 +17,14 @@ evaluation tool produces: which of your labels are still true.**
 </div>
 
 ---
+
+A retrieval test suite rests on one assumption nobody writes down: that every label still points
+at the passage a human actually read. Labels are stored as chunk IDs, and chunk IDs are an
+artifact of your chunker. Change the chunk size, the splitter or the overlap, and the IDs move
+while the labels stay where they were. Nothing errors. The metrics keep computing, against ground
+truth that is partly no longer there.
+
+One command shows you how much:
 
 ```bash
 retrieval-eval drift --judgments judgments.jsonl --corpus corpus.json
@@ -57,7 +68,27 @@ expose.
 
 > **See it happen in 30 seconds.** [`examples/quickstart`](https://github.com/aton-of-data/retrieval-eval/tree/main/examples/quickstart) runs a corpus
 > whose text never changes, re-chunks it, and watches `recall@3` fall from 1.00 to 0.00 while
-> retrieval stays perfect, then brings it back with `--fix`.
+> retrieval stays perfect, then brings it back with `--fix`. Six more runnable scenarios, the
+> integration for eight stacks, and complete CI jobs are in [`examples/`](https://github.com/aton-of-data/retrieval-eval/tree/main/examples).
+
+## Why this matters
+
+A golden set is the most expensive thing in a RAG project. Every label is a person reading a
+passage and deciding whether it answers a question. Yet it is the one artifact nothing checks.
+Retrievers get versioned, prompts get diffed, embedding models get benchmarked, and the labels
+underneath all of them are treated as permanent. They are coordinates into one particular
+chunking, and every chunking change moves the map.
+
+The damage is quiet, and it points the wrong way. A chunker that genuinely retrieves better can
+score worse, because its correct answers now live under IDs the labels have never seen. A real
+improvement and the decay it caused can cancel out and read as no change at all. Either way, the
+number you gate releases on is measuring two things at once, and nothing tells you how much of
+each.
+
+Teams that notice end up with three bad options: relabel from scratch, stop trusting the suite,
+or stop changing the chunker. `drift` is a fourth. It names exactly which labels moved, recovers
+every one whose text is provably still there, and sends only the rest to a human. After that,
+your metrics are measuring your retriever again.
 
 ## Install
 
@@ -65,13 +96,21 @@ expose.
 pip install retrieval-eval        # or: uvx retrieval-eval --help
 ```
 
-Same name, same commands, same flags, same output, same exit codes in both, so one CI step works
-for a polyglot team. Node 20.11 or newer, Python 3.10 or newer.
+Same name, same commands, same flags, same rendered output, same exit codes in both, so one CI
+step works for a polyglot team. Node 20.11 or newer, Python 3.10 or newer.
 
 ## What it does
 
-**1. Measures retrieval, deterministically.** `precision@k`, `recall@k`, `ndcg@k`, `mrr`, `map`,
-`hit_rate@k`. No model call, no API key, no per-run cost, milliseconds per run.
+**1. Keeps your labels true when the corpus changes.** Every chunk gets an identity derived from
+its content, not its position ([the one idea](#the-one-idea)), so a label remembers what a human
+read rather than where it used to sit. `drift` classifies every label as `VALID`,
+`RE_ANCHORABLE`, `MERGED`, `SPLIT` or `ORPHANED`, `--fix` repairs the two recoverable classes in
+place, and the command exits non-zero on decay, so a re-chunk cannot ship with a stale suite
+behind it. Run it before `score`, in CI, on every chunking change.
+
+**2. Measures retrieval, deterministically.** `precision@k`, `recall@k`, `ndcg@k`, `mrr@k`, `map@k`,
+`hit_rate@k`. Every metric carries its cutoff in its name, because a number that means
+something other than its name is how a report stops being trustworthy. No model call, no API key, no per-run cost, milliseconds per run.
 
 These are the metrics that localize a failure. High `recall@20` with low `recall@5` means
 retrieval found the answer and ranking buried it, so the reranker is the problem rather than the
@@ -84,7 +123,7 @@ retrieval-eval score --judgments judgments.jsonl --run hits.jsonl -k 5 \
   --gate worst-stratum:recall@5:0.7
 ```
 
-**2. Refuses to let an average hide a broken query class.**
+**3. Refuses to let an average hide a broken query class.**
 
 ```
   recall@3 by stratum
@@ -100,7 +139,7 @@ Overall recall is 0.60 and passes an average gate. Legal queries retrieve nothin
 `stratum` is a field in the format, `per_stratum` is mandatory in the report, and worst-stratum
 gating is a first-class gate.
 
-**3. Speaks TREC qrels, so thirty years of tooling just works.**
+**4. Speaks TREC qrels, so thirty years of tooling just works.**
 
 ```bash
 retrieval-eval convert --judgments judgments.jsonl --to qrels | trec_eval -m all_trec - run.txt
@@ -110,7 +149,7 @@ retrieval-eval convert --qrels beir/scifact/qrels/test.tsv --to judgments > judg
 A judgments file is a strict superset of qrels, so `trec_eval`, `ir_measures`, `pytrec_eval`,
 BEIR and `ir_datasets` are all one conversion away in either direction.
 
-**4. Tells you when a judgment set is unsound**, not merely malformed:
+**5. Tells you when a judgment set is unsound**, not merely malformed:
 
 ```
   warning [no-human-labels] every label is synthetic. Without human labels you cannot measure
@@ -125,7 +164,8 @@ BEIR and `ir_datasets` are all one conversion away in either direction.
 Give every chunk an identity derived from its **content**, not its position:
 
 ```
-chunk_id = "c1:" + sha256(doc_uri ␟ doc_revision ␟ ordinal ␟ normalize(text) ␟ chunker_fingerprint)[:16]
+chunk_id = "c1:" + sha256(doc_uri ␟ doc_revision ␟ ordinal ␟ normalize(text) ␟ chunker_fingerprint)[0..16]
+#                    128 bits, written as 32 lowercase hex characters
 ```
 
 A label then points at text a human read, so after a re-chunk the tool can say exactly which
@@ -141,9 +181,10 @@ Each row is a situation teams are already in.
 
 | Situation | What breaks today | What changes |
 |---|---|---|
+| Chunker changed and a metric moved | the whole movement is credited to the retriever | drift separates label decay from retrieval change |
+| Chunk size tuned, labels now point at stale IDs | the golden set is relabeled by hand, or quietly trusted anyway | `--fix` re-anchors every label whose text survived; only the rest need a human |
 | Golden set built in one evaluation tool, team adopts another | labels are rebuilt by hand or abandoned | one conversion, labels outlive the tool |
 | Public collection in TREC qrels, product written in TypeScript | no path into the ecosystem | one conversion, then scored locally |
-| Chunker changed and a metric moved | the whole movement is credited to the retriever | drift separates label decay from retrieval change |
 | Gate on an aggregate metric | a whole query class can fail silently | worst-stratum gate fails the build |
 | Judged metric gated on a single sample | a non-deterministic instrument reported as a point estimate | confidence interval, plus an `INDETERMINATE` verdict |
 | Synthetic labels accumulating over time | they become ground truth without anyone deciding that | `labeled_by` is required, and `validate` warns |
@@ -193,7 +234,14 @@ GitLab, CircleCI, Jenkins, Azure Pipelines and pre-commit recipes are in [docs/c
 
 ## Why this does not already exist
 
-Python has `pytrec_eval`, `ir_measures` and BEIR. On npm the package names you would reach for
+Every evaluation tool scores against a golden set. None of them checks whether the golden set
+still describes the corpus. RAGAS, DeepEval, promptfoo and the IR toolkits all store a label as
+a pointer and trust it forever, because no shared format records which corpus revision or which
+chunker a label was made against. Without that, drift is not merely unreported, it is
+unmeasurable. The judgment format here adds exactly the fields that make it measurable, and
+`drift` is the algorithm that uses them.
+
+The metrics had a smaller gap of their own. Python has `pytrec_eval`, `ir_measures` and BEIR. On npm the package names you would reach for
 first, `ndcg`, `ir-measures`, `trec-eval` and `qrels`, are unpublished, and what does exist is
 thin: [`node-dcg`](https://www.npmjs.com/package/node-dcg) computes DCG alone and was last
 published in 2023, [`trec-eval-wrapper`](https://www.npmjs.com/package/trec-eval-wrapper) shells
@@ -201,9 +249,9 @@ out to the `trec_eval` C binary rather than implementing anything and was last p
 and the recent entries are coupled to something else, an MCP server or a recommender engine's own
 core package.
 
-So the gap is not that npm has no ranking mathematics anywhere. It is that **no maintained,
-standalone, dependency-free IR evaluation library exists for JavaScript**, and that **nothing in
-either ecosystem treats judgment drift as a measurable condition**. The evidence, including the
+So there are two gaps, in order of importance: **nothing in either ecosystem treats judgment
+drift as a measurable condition**, and **no maintained, standalone, dependency-free IR
+evaluation library exists for JavaScript**. The evidence, including the
 two claims this research falsified against its own earlier draft, is in
 [research/](https://github.com/aton-of-data/retrieval-eval/tree/main/research/).
 
@@ -220,10 +268,18 @@ Use it alongside RAGAS, DeepEval, promptfoo, Phoenix or Braintrust rather than i
 makes their golden sets portable and durable, which is why interoperability is the strategy rather
 than a feature.
 
-For the judged half, the report format carries the honesty those metrics need: `n`, `stdev`, a
-confidence interval, and a third verdict, `INDETERMINATE`, because LLM judges are
-non-deterministic even at temperature 0 and a `ci-lower` gate on a single-sample metric should say
-"I do not know" rather than guess.
+For the judged half, the report format carries the honesty those metrics need, and `summarize()`
+computes it: `n`, `stdev` and a confidence interval from repeated samples of the same judge, plus
+a third verdict, `INDETERMINATE`. LLM judges are non-deterministic even at temperature 0, so a
+`ci-lower` gate on a single sample says "I do not know" rather than guessing.
+
+```python
+report.metrics["faithfulness"] = summarize([0.8, 1.0, 0.6, 0.9, 0.7])
+#  value 0.8000, stdev 0.1581, 95% interval [0.6037, 0.9963]
+#  the mean clears a 0.8 floor; the interval says you cannot tell yet
+```
+
+[`examples/judged-metrics`](https://github.com/aton-of-data/retrieval-eval/tree/main/examples/judged-metrics) runs that end to end in both languages.
 
 ## Why zero dependencies
 
@@ -242,7 +298,10 @@ What is already load-bearing, and enforced on every commit:
 - **Parity.** Both implementations run the same `spec/fixtures` through both CLIs and must agree
   on the numbers, the rendered output, the help text and the exit codes. Not two test suites that
   each pass, one job that runs both and diffs the result.
-- **Determinism.** Same inputs, same bytes out. No network, no model, no clock in the numbers.
+- **Determinism.** Same inputs, same output, every run. No network, no model, no clock in the
+  numbers. Across the two implementations: rendered output and judgments files are byte-identical,
+  and `--json` agrees as data rather than as bytes, because JSON writes a whole number as `1` in
+  JavaScript and `1.0` in Python. Compare reports by parsing them, not by checksum.
 - **A quickstart that is executed, not described.** CI runs the README's own first-run path on a
   clean checkout on Linux and macOS, and asserts the demo still demonstrates its claim.
 
@@ -254,7 +313,9 @@ spec/                        the contract: 2 schemas, 1 hash definition, shared 
 packages/retrieval-eval/     TypeScript (tsup · vitest · biome)
 python/retrieval-eval/       Python     (hatchling · pytest · ruff · mypy --strict)
 docs/                        CLI reference, CI recipes, interop, troubleshooting
-examples/quickstart/         the 30-second demo, run verbatim by CI
+examples/                    runnable scenarios, stack integrations, pipeline jobs
+  frameworks/                LangChain, LlamaIndex, Haystack, Chroma, Qdrant, pgvector, RAGAS, DeepEval
+  pipelines/                 Jenkins, GitHub Actions, GitLab, Azure, CircleCI, pre-commit
 research/                    the evidence behind the design
 ```
 
@@ -270,7 +331,7 @@ the twelfth decimal, which is what makes "parity by spec" a claim rather than a 
 | [docs/interop.md](https://github.com/aton-of-data/retrieval-eval/blob/main/docs/interop.md) | qrels, BEIR, `ir_datasets`, and the tools you already run |
 | [docs/troubleshooting.md](https://github.com/aton-of-data/retrieval-eval/blob/main/docs/troubleshooting.md) | every error and warning, and what to do about it |
 | [spec/](https://github.com/aton-of-data/retrieval-eval/tree/main/spec/) | the formats, the hash, the fixtures |
-| [examples/quickstart](https://github.com/aton-of-data/retrieval-eval/tree/main/examples/quickstart) | watch a metric collapse and recover |
+| [examples/](https://github.com/aton-of-data/retrieval-eval/tree/main/examples) | seven runnable scenarios, eight stack integrations, seven pipeline jobs |
 | [research/](https://github.com/aton-of-data/retrieval-eval/tree/main/research/) | the problem, the market gap, and the impact argument |
 | [CONTRIBUTING.md](https://github.com/aton-of-data/retrieval-eval/blob/main/CONTRIBUTING.md) | add a metric, add an adapter, port the spec |
 
