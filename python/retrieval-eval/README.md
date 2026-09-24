@@ -9,10 +9,13 @@ Label drift detection · deterministic retrieval metrics · a portable, qrels-co
 Zero dependencies · no API key · TypeScript and Python
 
 [![CI](https://github.com/aton-of-data/retrieval-eval/actions/workflows/ci.yml/badge.svg)](https://github.com/aton-of-data/retrieval-eval/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/retrieval-eval?logo=npm&color=cb3837)](https://www.npmjs.com/package/retrieval-eval)
-[![PyPI](https://img.shields.io/pypi/v/retrieval-eval?logo=pypi&logoColor=white&color=3775a9)](https://pypi.org/project/retrieval-eval/)
+[![npm version](https://img.shields.io/npm/v/retrieval-eval?logo=npm&label=npm&color=cb3837)](https://www.npmjs.com/package/retrieval-eval)
+[![PyPI version](https://img.shields.io/pypi/v/retrieval-eval?logo=pypi&logoColor=white&label=pypi&color=3775a9)](https://pypi.org/project/retrieval-eval/)
+[![node](https://img.shields.io/node/v/retrieval-eval?logo=nodedotjs&logoColor=white&color=5fa04e)](https://www.npmjs.com/package/retrieval-eval)
+[![python](https://img.shields.io/pypi/pyversions/retrieval-eval?logo=python&logoColor=white&color=3775a9)](https://pypi.org/project/retrieval-eval/)
 [![zero dependencies](https://img.shields.io/badge/runtime%20deps-0-brightgreen)](#why-zero-dependencies)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/aton-of-data/retrieval-eval/blob/main/LICENSE)
+[![docs](https://img.shields.io/badge/docs-aton--of--data.github.io-0d1117?logo=github)](https://aton-of-data.github.io/retrieval-eval/)
 
 </div>
 
