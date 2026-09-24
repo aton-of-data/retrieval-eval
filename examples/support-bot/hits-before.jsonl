@@ -1,0 +1,11 @@
+{"query_id": "q01", "ranking": ["c1:7df38ec6d5c5280cd3ff56778da125ef", "c1:e2c4c6f69f38e4ae45d437be12e5c439", "c1:f5772a2b45b81d5d0cadf419c3a0f92d"]}
+{"query_id": "q02", "ranking": ["c1:e2c4c6f69f38e4ae45d437be12e5c439", "c1:7df38ec6d5c5280cd3ff56778da125ef", "c1:7f5f7b88b53fea8116dd359759367eac"]}
+{"query_id": "q03", "ranking": ["c1:f5772a2b45b81d5d0cadf419c3a0f92d", "c1:7f5f7b88b53fea8116dd359759367eac", "c1:e1f62b47b1124bae32ce9bcfe652137d"]}
+{"query_id": "q04", "ranking": ["c1:54130ce877f726b3011378d1a29305f0", "c1:48d45cb90ccb0e5a65d4382f303e001e", "c1:84a59f357a53889d1c0a6815c09dbe84"]}
+{"query_id": "q05", "ranking": ["c1:84a59f357a53889d1c0a6815c09dbe84", "c1:e1f62b47b1124bae32ce9bcfe652137d", "c1:54130ce877f726b3011378d1a29305f0"]}
+{"query_id": "q06", "ranking": ["c1:e1f62b47b1124bae32ce9bcfe652137d", "c1:84a59f357a53889d1c0a6815c09dbe84", "c1:48d45cb90ccb0e5a65d4382f303e001e"]}
+{"query_id": "q07", "ranking": ["c1:8d69dbfa9ba9babb6a0dd33e2a096095", "c1:6d72e3b0121fb6eed6f283b258f5afa2", "c1:e1f62b47b1124bae32ce9bcfe652137d"]}
+{"query_id": "q08", "ranking": ["c1:04223e70378b329a848102a444b4181a", "c1:8a1da9c4acf280bd67ac57b7107d911e", "c1:6d72e3b0121fb6eed6f283b258f5afa2"]}
+{"query_id": "q09", "ranking": ["c1:8a1da9c4acf280bd67ac57b7107d911e", "c1:04223e70378b329a848102a444b4181a", "c1:f44f96f1250f7fbcad9c60d42a8f02e3"]}
+{"query_id": "q10", "ranking": ["c1:f44f96f1250f7fbcad9c60d42a8f02e3", "c1:85a7d970937a0c0258d6186f3820402c", "c1:7df38ec6d5c5280cd3ff56778da125ef"]}
+{"query_id": "q11", "ranking": ["c1:85a7d970937a0c0258d6186f3820402c", "c1:f44f96f1250f7fbcad9c60d42a8f02e3", "c1:6d72e3b0121fb6eed6f283b258f5afa2"]}

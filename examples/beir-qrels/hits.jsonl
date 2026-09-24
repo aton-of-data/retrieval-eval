@@ -1,0 +1,4 @@
+{"query_id": "qa1", "ranking": ["d1", "d3", "d2", "d5", "d4"]}
+{"query_id": "qa2", "ranking": ["d4", "d5", "d1", "d7", "d2"]}
+{"query_id": "qa3", "ranking": ["d5", "d1", "d7", "d6", "d3"]}
+{"query_id": "qa4", "ranking": ["d7", "d8", "d5", "d1", "d2"]}

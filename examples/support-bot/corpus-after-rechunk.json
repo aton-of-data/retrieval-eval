@@ -1,0 +1,62 @@
+{
+  "corpus_fingerprint": "recursive/1024/64",
+  "chunker_fingerprint": "recursive/1024/64",
+  "chunks": [
+    {
+      "chunk_id": "c1:b7ee3ad7e8c20a09069dd1084ce7d9ba",
+      "doc_uri": "help://billing/invoices",
+      "doc_revision": "2026-08-04",
+      "ordinal": 0,
+      "text": "Invoices are issued on the first business day of each month and charged to the payment method on file.\n\nA failed payment is retried three times over six days before the subscription is suspended.",
+      "text_sha": "t1:af407570e531dd61f144be356b5f66bb"
+    },
+    {
+      "chunk_id": "c1:fdc19a2bbb65a191162924cd509808c4",
+      "doc_uri": "help://billing/refunds",
+      "doc_revision": "2026-08-04",
+      "ordinal": 0,
+      "text": "Annual plans may be refunded within 30 days of renewal, prorated to the day of the request.\n\nMonthly plans are not refundable after the billing date, but you can cancel to stop the next charge.",
+      "text_sha": "t1:0b47509d14898a76e4527929248cc6db"
+    },
+    {
+      "chunk_id": "c1:5c3a1ac0f210ee46b916150d8557dde5",
+      "doc_uri": "help://shipping/delivery",
+      "doc_revision": "2026-07-19",
+      "ordinal": 0,
+      "text": "Standard delivery takes three to five business days once the order leaves the warehouse.\n\nExpress delivery arrives the next business day for orders placed before 2pm local time.",
+      "text_sha": "t1:7016f40c6985f844d0e0c1dbcd2db9e9"
+    },
+    {
+      "chunk_id": "c1:14cde2a53ac0e768ff5d722975c4aeb9",
+      "doc_uri": "help://shipping/returns",
+      "doc_revision": "2026-07-19",
+      "ordinal": 0,
+      "text": "Unopened items can be returned within 45 days using the prepaid label in the box.\n\nReturn shipping is free for exchanges and deducted from the refund otherwise.",
+      "text_sha": "t1:288440bbce0e189b6f114891143a43b4"
+    },
+    {
+      "chunk_id": "c1:76b75593aabee0295f69f258eece395c",
+      "doc_uri": "help://legal/terms",
+      "doc_revision": "2026-09-01",
+      "ordinal": 0,
+      "text": "Disputes are resolved by binding arbitration in the customer's country of residence.\n\nEither party may terminate the agreement with 30 days of written notice.",
+      "text_sha": "t1:19ec59001cb68ea3af8b2ecd38715cbc"
+    },
+    {
+      "chunk_id": "c1:c4aa8d2d30fa208af6f4589f92a17690",
+      "doc_uri": "help://legal/privacy",
+      "doc_revision": "2026-09-01",
+      "ordinal": 0,
+      "text": "Personal data is retained for 24 months after the last account activity, then deleted.\n\nA data export can be requested at any time and is delivered within 30 days.",
+      "text_sha": "t1:6ab2b208f9f924415e10eaf855342cc3"
+    },
+    {
+      "chunk_id": "c1:f47ddc1374b8d8bdd2f8beeb9460bf04",
+      "doc_uri": "help://account/access",
+      "doc_revision": "2026-06-11",
+      "ordinal": 0,
+      "text": "Passwords can be reset from the sign-in page using the email address on the account.\n\nTwo-factor authentication can be enabled per user and is required for admin roles.",
+      "text_sha": "t1:2aaea90a4301f4d812b2498d3d3db999"
+    }
+  ]
+}

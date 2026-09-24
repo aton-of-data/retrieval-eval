@@ -1,0 +1,182 @@
+{
+  "corpus_fingerprint": "markdown/768/96",
+  "chunker_fingerprint": "markdown/768/96",
+  "chunks": [
+    {
+      "chunk_id": "c1:83e23ceb1295da73112e58717395f555",
+      "doc_uri": "docs://api/auth",
+      "doc_revision": "v2",
+      "ordinal": 0,
+      "text": "API keys are passed in the Authorization header as a bearer token.",
+      "text_sha": "t1:4c069d74d14a8e636ede0c161347373d"
+    },
+    {
+      "chunk_id": "c1:b259bf173aa4379af0adef8e5807a0f3",
+      "doc_uri": "docs://api/auth",
+      "doc_revision": "v2",
+      "ordinal": 1,
+      "text": "A key can be scoped to read, write or admin, and scopes cannot be widened after creation.",
+      "text_sha": "t1:2044f4779a41efc7fdcc9e7d90c8506a"
+    },
+    {
+      "chunk_id": "c1:326cb0106b4f29872c3e0dc812a19e44",
+      "doc_uri": "docs://api/auth",
+      "doc_revision": "v2",
+      "ordinal": 2,
+      "text": "Keys expire 90 days after their last use and can be rotated without downtime.",
+      "text_sha": "t1:008f75e0cf2d0fbea44543d4ceaed36a"
+    },
+    {
+      "chunk_id": "c1:84013221430f0060b73c0d63886a7d0e",
+      "doc_uri": "docs://api/rate-limits",
+      "doc_revision": "v2",
+      "ordinal": 0,
+      "text": "The default limit is 600 requests per minute per API key, measured in a sliding window.",
+      "text_sha": "t1:35ce99524a725c96cb3eecb4c983a475"
+    },
+    {
+      "chunk_id": "c1:85d606d9196f4cd5cf51bbed2a676d3b",
+      "doc_uri": "docs://api/rate-limits",
+      "doc_revision": "v2",
+      "ordinal": 1,
+      "text": "A rate-limited response returns 429 with a Retry-After header in seconds.",
+      "text_sha": "t1:631b087abf2dbce8bf7cff02e79bde41"
+    },
+    {
+      "chunk_id": "c1:f85f26c687befc48e4c59c1b9f76e448",
+      "doc_uri": "docs://api/rate-limits",
+      "doc_revision": "v2",
+      "ordinal": 2,
+      "text": "Burst capacity is 100 requests and refills at the sustained rate.",
+      "text_sha": "t1:c60a3c0bb5b267bf9a7a3f6503baad6b"
+    },
+    {
+      "chunk_id": "c1:b976625841739312622f9512d1ca25df",
+      "doc_uri": "docs://api/pagination",
+      "doc_revision": "v2",
+      "ordinal": 0,
+      "text": "List endpoints return a cursor in the next_page field; pass it as the page parameter.",
+      "text_sha": "t1:94b6918b0c917876890b0cc4262afe60"
+    },
+    {
+      "chunk_id": "c1:c1d2b8c2e5eea6364b0fc842253215a6",
+      "doc_uri": "docs://api/pagination",
+      "doc_revision": "v2",
+      "ordinal": 1,
+      "text": "Page size defaults to 50 and can be raised to 200 with the limit parameter.",
+      "text_sha": "t1:91259a66064559ef2a6214de8f58454e"
+    },
+    {
+      "chunk_id": "c1:924af7973bf2101d6044de71c92ff324",
+      "doc_uri": "docs://api/pagination",
+      "doc_revision": "v2",
+      "ordinal": 2,
+      "text": "Cursors are stable for 24 hours, after which pagination must restart.",
+      "text_sha": "t1:29fbc1b69cd5e312ca4f6f853924b9a0"
+    },
+    {
+      "chunk_id": "c1:0c1e3c95bcbaf2c31162c7b5d8af32c4",
+      "doc_uri": "docs://api/webhooks",
+      "doc_revision": "v2",
+      "ordinal": 0,
+      "text": "Webhook payloads are signed with HMAC-SHA256 using the endpoint's signing secret.",
+      "text_sha": "t1:837971048326024cf3ecd536131f149e"
+    },
+    {
+      "chunk_id": "c1:06af4acdad1d93efe30be0058fd552ee",
+      "doc_uri": "docs://api/webhooks",
+      "doc_revision": "v2",
+      "ordinal": 1,
+      "text": "A delivery is retried eight times with exponential backoff over 24 hours.",
+      "text_sha": "t1:a41466dba95a2a01d78751132b17e393"
+    },
+    {
+      "chunk_id": "c1:02ec6c20b0e52c0f7a53ad6e2ffa245c",
+      "doc_uri": "docs://api/webhooks",
+      "doc_revision": "v2",
+      "ordinal": 2,
+      "text": "Endpoints must respond within 5 seconds or the delivery counts as failed.",
+      "text_sha": "t1:4c5a91833cc5c09e05551ea206354e5e"
+    },
+    {
+      "chunk_id": "c1:294f5c9b3733e7a6fbc20304c93fc175",
+      "doc_uri": "docs://api/errors",
+      "doc_revision": "v2",
+      "ordinal": 0,
+      "text": "Error responses carry a machine-readable code and a human-readable message.",
+      "text_sha": "t1:9fa7b042939b030bdd8833198ffa6e68"
+    },
+    {
+      "chunk_id": "c1:1a9acf2abfc3752d8bcf82b4f989dbf5",
+      "doc_uri": "docs://api/errors",
+      "doc_revision": "v2",
+      "ordinal": 1,
+      "text": "A 409 means the request conflicts with the current state and is safe to retry after reading.",
+      "text_sha": "t1:a3c7af80ba8cfd9d8b08cb6e0fbd6b6b"
+    },
+    {
+      "chunk_id": "c1:a1666d6b70d3ad24d5b473edde9d3a70",
+      "doc_uri": "docs://api/errors",
+      "doc_revision": "v2",
+      "ordinal": 2,
+      "text": "Validation errors list every offending field rather than stopping at the first.",
+      "text_sha": "t1:e7b9d897e123c65780bd0d5c58ffefd6"
+    },
+    {
+      "chunk_id": "c1:43fcd5c65ce250b715c93e9d4c82b3eb",
+      "doc_uri": "docs://guides/migration",
+      "doc_revision": "v2",
+      "ordinal": 0,
+      "text": "Version 2 replaces offset pagination with cursors; see the pagination reference.",
+      "text_sha": "t1:7980b92f98d5670aae2211c2e006fba0"
+    },
+    {
+      "chunk_id": "c1:7c94e73badf2766d48d7844dfd502352",
+      "doc_uri": "docs://guides/migration",
+      "doc_revision": "v2",
+      "ordinal": 1,
+      "text": "Bearer tokens replace the legacy query-string key, which was removed in version 2.",
+      "text_sha": "t1:f707283485ae3af7da08451beed67859"
+    },
+    {
+      "chunk_id": "c1:268ccbbb9258ad78a8e3459e605b2cf5",
+      "doc_uri": "docs://guides/migration",
+      "doc_revision": "v2",
+      "ordinal": 2,
+      "text": "The sandbox environment mirrors production limits so migrations can be rehearsed.",
+      "text_sha": "t1:e18b01eaad08652fd5ff1fc65331d874"
+    },
+    {
+      "chunk_id": "c1:4fa78315ba5735c3078e6c5c20ec5f0f",
+      "doc_uri": "docs://guides/quickstart",
+      "doc_revision": "v2",
+      "ordinal": 0,
+      "text": "Create a key, export it, and call the ping endpoint to confirm connectivity.",
+      "text_sha": "t1:55ef30cba5d55a66a6d8055efc33c3b0"
+    },
+    {
+      "chunk_id": "c1:7d6db24088c298c563c76f144a3d440d",
+      "doc_uri": "docs://guides/quickstart",
+      "doc_revision": "v2",
+      "ordinal": 1,
+      "text": "The official clients handle retries and rate limits for you.",
+      "text_sha": "t1:25b2ad043f452bbc8c7c5afee25cbb7e"
+    },
+    {
+      "chunk_id": "c1:ec67c00f87c55b23db30483bcc060977",
+      "doc_uri": "docs://guides/security",
+      "doc_revision": "v2",
+      "ordinal": 0,
+      "text": "Rotate keys on a schedule and never commit them to a repository.",
+      "text_sha": "t1:fc4e9f3033318e7d87dd714a7a4cad24"
+    },
+    {
+      "chunk_id": "c1:98c39f8fedf758487e5b911def5c1935",
+      "doc_uri": "docs://guides/security",
+      "doc_revision": "v2",
+      "ordinal": 1,
+      "text": "Verify webhook signatures before trusting a payload, including in staging.",
+      "text_sha": "t1:ec6ae8859937ec7a36aec7cb9d88e151"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+# Retrieval quality as a CircleCI job. Copy into .circleci/config.yml.
+
+version: 2.1
+
+jobs:
+  retrieval-quality:
+    docker:
+      - image: cimg/python:3.12
+    steps:
+      - checkout
+      - run: pip install --quiet retrieval-eval
+      - run:
+          name: Build the corpus snapshot and the run
+          command: |
+            python scripts/dump_corpus.py > eval/corpus.json
+            python scripts/run_queries.py > eval/hits.jsonl
+      - run:
+          name: Labels still describe the corpus
+          command: retrieval-eval drift --judgments eval/judgments.jsonl --corpus eval/corpus.json
+      - run:
+          name: Retrieval did not regress
+          command: |
+            retrieval-eval score \
+              --judgments eval/judgments.jsonl \
+              --run eval/hits.jsonl -k 5 \
+              --baseline eval/baseline.json \
+              --gate "recall@5:-0.02" \
+              --gate "worst-stratum:recall@5:0.7" \
+              --out report.json
+      - store_artifacts:
+          path: report.json
+
+workflows:
+  pull-request:
+    jobs: [retrieval-quality]

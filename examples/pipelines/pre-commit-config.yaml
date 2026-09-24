@@ -1,0 +1,21 @@
+# Catch an unsound judgment set before it reaches a pipeline.
+# Copy these hooks into your .pre-commit-config.yaml.
+
+repos:
+  - repo: local
+    hooks:
+      - id: retrieval-eval-validate
+        name: relevance judgments are sound
+        entry: retrieval-eval validate --judgments
+        language: system
+        files: ^eval/judgments\.jsonl$
+        pass_filenames: true
+
+      # Only meaningful when the corpus snapshot is committed beside the labels. When it is
+      # rebuilt in CI instead, drop this hook and keep the check in the pipeline.
+      - id: retrieval-eval-drift
+        name: labels still describe the committed corpus
+        entry: bash -c 'retrieval-eval drift --judgments eval/judgments.jsonl --corpus eval/corpus.json'
+        language: system
+        files: ^eval/(judgments\.jsonl|corpus\.json)$
+        pass_filenames: false

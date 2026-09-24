@@ -1,0 +1,197 @@
+{
+  "spec_version": "1",
+  "tool": {
+    "name": "retrieval-eval",
+    "version": "0.1.0"
+  },
+  "generated_at": "2026-09-23T14:13:10.136Z",
+  "corpus": {
+    "fingerprint": null
+  },
+  "judgments": {
+    "queries": 11,
+    "queries_scored": 11,
+    "labels": 13,
+    "fingerprint": "recursive/512/64",
+    "human_labels": 13,
+    "synthetic_labels": 0
+  },
+  "metrics": {
+    "precision@3": {
+      "value": 0.393939393939,
+      "n": 1,
+      "deterministic": true
+    },
+    "recall@3": {
+      "value": 1,
+      "n": 1,
+      "deterministic": true
+    },
+    "ndcg@3": {
+      "value": 1,
+      "n": 1,
+      "deterministic": true
+    },
+    "mrr@3": {
+      "value": 1,
+      "n": 1,
+      "deterministic": true
+    },
+    "map@3": {
+      "value": 1,
+      "n": 1,
+      "deterministic": true
+    },
+    "hit_rate@3": {
+      "value": 1,
+      "n": 1,
+      "deterministic": true
+    }
+  },
+  "per_stratum": {
+    "billing": {
+      "n": 3,
+      "metrics": {
+        "precision@3": {
+          "value": 0.444444444444,
+          "n": 1,
+          "deterministic": true
+        },
+        "recall@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        },
+        "ndcg@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        },
+        "mrr@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        },
+        "map@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        },
+        "hit_rate@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        }
+      }
+    },
+    "shipping": {
+      "n": 3,
+      "metrics": {
+        "precision@3": {
+          "value": 0.444444444444,
+          "n": 1,
+          "deterministic": true
+        },
+        "recall@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        },
+        "ndcg@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        },
+        "mrr@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        },
+        "map@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        },
+        "hit_rate@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        }
+      }
+    },
+    "legal": {
+      "n": 3,
+      "metrics": {
+        "precision@3": {
+          "value": 0.333333333333,
+          "n": 1,
+          "deterministic": true
+        },
+        "recall@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        },
+        "ndcg@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        },
+        "mrr@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        },
+        "map@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        },
+        "hit_rate@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        }
+      }
+    },
+    "account": {
+      "n": 2,
+      "metrics": {
+        "precision@3": {
+          "value": 0.333333333333,
+          "n": 1,
+          "deterministic": true
+        },
+        "recall@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        },
+        "ndcg@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        },
+        "mrr@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        },
+        "map@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        },
+        "hit_rate@3": {
+          "value": 1,
+          "n": 1,
+          "deterministic": true
+        }
+      }
+    }
+  },
+  "verdict": {
+    "status": "PASS",
+    "reasons": []
+  }
+}

@@ -1,0 +1,39 @@
+# Retrieval quality as an Azure Pipelines job.
+
+trigger: none
+pr:
+  branches: { include: [main] }
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - task: UsePythonVersion@0
+    inputs: { versionSpec: "3.12" }
+
+  - script: pip install --quiet retrieval-eval
+    displayName: Install
+
+  - script: |
+      python scripts/dump_corpus.py > eval/corpus.json
+      python scripts/run_queries.py > eval/hits.jsonl
+    displayName: Build the corpus snapshot and the run
+
+  - script: retrieval-eval drift --judgments eval/judgments.jsonl --corpus eval/corpus.json
+    displayName: Labels still describe the corpus
+
+  - script: >
+      retrieval-eval score
+      --judgments eval/judgments.jsonl
+      --run eval/hits.jsonl -k 5
+      --baseline eval/baseline.json
+      --gate "recall@5:-0.02"
+      --gate "worst-stratum:recall@5:0.7"
+      --out $(Build.ArtifactStagingDirectory)/report.json
+    displayName: Retrieval gates
+
+  - task: PublishBuildArtifacts@1
+    condition: always()
+    inputs:
+      pathToPublish: $(Build.ArtifactStagingDirectory)
+      artifactName: retrieval-report

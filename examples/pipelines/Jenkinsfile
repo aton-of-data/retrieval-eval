@@ -1,0 +1,87 @@
+// Retrieval quality as a Jenkins stage.
+//
+// Copy into your Jenkinsfile, or run it as its own job against the repository that holds your
+// judgment set. Nothing here needs a model, an API key or network access at evaluation time.
+
+pipeline {
+  agent any
+
+  environment {
+    EVAL_DIR = 'eval'
+    // Exit 1 means quality regressed. Exit 2 means the invocation or the input is broken.
+    // Keeping them apart is what stops a bad path from being reported as a bad retriever.
+    GATE_FAILED = '1'
+  }
+
+  stages {
+    stage('Install') {
+      steps {
+        // Either package works. Pick the one your agents already have a runtime for.
+        sh 'pip install --quiet --upgrade retrieval-eval'
+        sh 'retrieval-eval --version'
+      }
+    }
+
+    stage('Build the corpus snapshot and the run') {
+      steps {
+        // Your indexing and retrieval code, writing the two integration files.
+        // See ../frameworks for what this looks like in each stack.
+        sh 'python3 scripts/dump_corpus.py  > ${EVAL_DIR}/corpus.json'
+        sh 'python3 scripts/run_queries.py  > ${EVAL_DIR}/hits.jsonl'
+      }
+    }
+
+    stage('Labels still describe the corpus') {
+      steps {
+        script {
+          def code = sh(returnStatus: true, script: """
+            retrieval-eval drift \
+              --judgments ${EVAL_DIR}/judgments.jsonl \
+              --corpus ${EVAL_DIR}/corpus.json \
+              --json > ${EVAL_DIR}/drift.json
+          """)
+          if (code == 2) {
+            error('retrieval-eval could not read its inputs: this is a pipeline bug, not a quality signal')
+          }
+          if (code == Integer.parseInt(env.GATE_FAILED)) {
+            // Decayed labels are not automatically a build failure: they are a reason not to
+            // trust the numbers that follow. Fail the stage, keep the report, and let a human
+            // decide whether to re-anchor or re-judge.
+            unstable('Judgment set no longer matches the live corpus. See drift.json.')
+          }
+        }
+      }
+    }
+
+    stage('Retrieval did not regress') {
+      steps {
+        script {
+          def code = sh(returnStatus: true, script: """
+            retrieval-eval score \
+              --judgments ${EVAL_DIR}/judgments.jsonl \
+              --run ${EVAL_DIR}/hits.jsonl \
+              -k 5 \
+              --baseline ${EVAL_DIR}/baseline.json \
+              --gate 'recall@5:-0.02' \
+              --gate 'worst-stratum:recall@5:0.7' \
+              --out ${EVAL_DIR}/report.json
+          """)
+          if (code == 2) {
+            error('retrieval-eval could not read its inputs')
+          }
+          if (code != 0) {
+            error('Retrieval quality gate failed. See report.json.')
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      archiveArtifacts artifacts: 'eval/*.json', allowEmptyArchive: true
+      // The reports are plain JSON against a published schema, so the usual publishers work.
+      // plot, junit converters and custom dashboards all read report.json without a plugin.
+    }
+  }
+}

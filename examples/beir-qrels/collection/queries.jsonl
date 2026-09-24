@@ -1,0 +1,4 @@
+{"_id": "qa1", "text": "how do I smooth bursty traffic?"}
+{"_id": "qa2", "text": "how long should a client wait before retrying?"}
+{"_id": "qa3", "text": "how do I retry a write without duplicating it?"}
+{"_id": "qa4", "text": "how do I stop hammering a dependency that is down?"}

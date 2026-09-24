@@ -1,0 +1,65 @@
+# Retrieval quality on every pull request.
+# Copy to .github/workflows/retrieval-quality.yml in your own repository.
+
+name: Retrieval quality
+
+on:
+  pull_request:
+    paths:
+      - "eval/**"
+      - "src/retrieval/**"
+      - ".github/workflows/retrieval-quality.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  retrieval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Your indexing and retrieval code writes these two files.
+      # See ../frameworks for what that looks like in each stack.
+      - name: Build the corpus snapshot and the run
+        run: |
+          node scripts/dump-corpus.mjs > eval/corpus.json
+          node scripts/run-queries.mjs > eval/hits.jsonl
+
+      - name: Labels still describe the corpus
+        run: npx retrieval-eval drift --judgments eval/judgments.jsonl --corpus eval/corpus.json
+
+      - name: Retrieval did not regress
+        run: |
+          npx retrieval-eval score \
+            --judgments eval/judgments.jsonl \
+            --run eval/hits.jsonl -k 5 \
+            --baseline eval/baseline.json \
+            --gate "recall@5:-0.02" \
+            --gate "worst-stratum:recall@5:0.7" \
+            --out report.json
+
+      # The report is most useful on the run that failed.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: retrieval-report
+          path: report.json
+
+      - name: Comment the numbers on the pull request
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo '### Retrieval quality'
+            echo
+            echo '```'
+            npx retrieval-eval score --judgments eval/judgments.jsonl \
+              --run eval/hits.jsonl -k 5 --color never || true
+            echo '```'
+          } > comment.md
+          gh pr comment "${{ github.event.number }}" --body-file comment.md

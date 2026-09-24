@@ -1,0 +1,26 @@
+# Retrieval quality as a GitLab CI job. Copy into .gitlab-ci.yml.
+
+retrieval-quality:
+  image: python:3.12-slim
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  before_script:
+    - pip install --quiet retrieval-eval
+  script:
+    # Your indexing and retrieval code writes these two files.
+    - python scripts/dump_corpus.py > eval/corpus.json
+    - python scripts/run_queries.py > eval/hits.jsonl
+
+    - retrieval-eval drift --judgments eval/judgments.jsonl --corpus eval/corpus.json
+    - >
+      retrieval-eval score
+      --judgments eval/judgments.jsonl
+      --run eval/hits.jsonl -k 5
+      --baseline eval/baseline.json
+      --gate "recall@5:-0.02"
+      --gate "worst-stratum:recall@5:0.7"
+      --out report.json
+  artifacts:
+    when: always
+    paths: [report.json]
+    expire_in: 30 days
