@@ -9,29 +9,51 @@ permissions:
   contents: read
 
 jobs:
+  # A tag that disagrees with the manifests would publish one version under another's name.
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - run: node scripts/check-version.mjs
+      - if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version=$(node -p "require('./packages/retrieval-eval/package.json').version")
+          if [ "$tag" != "$version" ]; then
+            echo "::error::tag v$tag does not match version $version"
+            exit 1
+          fi
+
   # Never publish something that has not proved parity.
   verify:
+    needs: version
     uses: ./.github/workflows/ci.yml
 
+  # Trusted publishing: npm exchanges this job's OIDC token for a one-off publish credential, and
+  # attaches a provenance attestation. There is no NPM_TOKEN to leak or to expire. Needs npm
+  # 11.5.1 or later, and the trusted publisher configured on npmjs.com for release.yml.
   npm:
     needs: verify
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # npm provenance
+      id-token: write
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version: "24"
           cache: pnpm
           registry-url: https://registry.npmjs.org
+      - run: npm install -g npm@latest
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: pnpm publish --filter retrieval-eval --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm publish --access public
+        working-directory: packages/retrieval-eval
 
   pypi:
     needs: verify
@@ -59,3 +81,25 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: python/retrieval-eval/dist
+
+  # Only once both registries have the version: a GitHub release pointing at a package that
+  # failed to publish is a promise nobody can install.
+  github-release:
+    needs: [npm, pypi]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Notes from CHANGELOG.md
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            /^## / { if (found) exit; if (index($0, "## " v ",") == 1) { found = 1; next } }
+            found
+          ' CHANGELOG.md > notes.md
+          test -s notes.md || { echo "::error::no CHANGELOG entry for $version"; exit 1; }
+      - run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+        env:
+          GH_TOKEN: ${{ github.token }}

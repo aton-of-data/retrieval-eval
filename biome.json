@@ -26,7 +26,8 @@
       "!**/packages/**/*/spec",
       "!**/python",
       "!**/spec/**/*.json",
-      "!scripts/site"
+      "!scripts/site",
+      "!_site"
     ]
   }
 }
