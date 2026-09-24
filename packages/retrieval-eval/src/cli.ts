@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import { drift, fix } from "./drift.js";
@@ -442,7 +442,23 @@ function runConvert(values: Values["values"], io: Io): number {
   }
 }
 
-const entry = process.argv[1];
-if (entry !== undefined && import.meta.url === pathToFileURL(entry).href) {
+/**
+ * True when this module is the program being run rather than an import.
+ *
+ * `argv[1]` is the path the user invoked, and an installed binary is invoked through a symlink:
+ * `node_modules/.bin/retrieval-eval` for npm and npx, a global bin directory for `-g`. Comparing
+ * it to `import.meta.url`, which is always the real path, made every installed CLI exit 0 with no
+ * output. Resolve the link first.
+ */
+function isEntrypoint(entry: string | undefined): boolean {
+  if (entry === undefined) return false;
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(entry)).href;
+  } catch {
+    return false;
+  }
+}
+
+if (isEntrypoint(process.argv[1])) {
   process.exit(main(process.argv.slice(2)));
 }
