@@ -71,8 +71,16 @@ retrieval-eval score --judgments judgments.jsonl --run hits.jsonl -k 5 \
 | `--baseline` | none | a previous report, required by delta gates |
 | `--out` | none | write the JSON report to a file while still printing for a human |
 
-Metrics: `precision@k`, `recall@k`, `ndcg@k`, `mrr`, `map`, `hit_rate@k`. All deterministic, no
-model call, milliseconds per run.
+Metrics: `precision@k`, `recall@k`, `ndcg@k`, `mrr@k`, `map@k`, `hit_rate@k`. All deterministic,
+no model call, milliseconds per run.
+
+Every metric is computed over the top `k` results and named for it. `mrr@k` and `map@k` are
+reciprocal rank and average precision **within that cutoff**, not over an unbounded run, which is
+why they carry the cutoff that `trec_eval`'s `recip_rank` and `map` do not.
+
+A query with no label at or above `--threshold` has nothing for retrieval to find, so it is
+excluded from the averages rather than scored zero, and the count is reported as
+`judgments.queries_scored` and printed under the metrics.
 
 These are the metrics that localize a failure. High `recall@20` with low `recall@5` means
 retrieval found the answer and ranking buried it, which points at the reranker rather than the
@@ -129,16 +137,27 @@ retrieval-eval convert --judgments judgments.jsonl --to qrels | trec_eval -m all
 The CLI is a thin layer over the exported functions. Both packages expose the same surface.
 
 ```ts
-import { chunkId, drift, fix, score, toQrels, validate } from "retrieval-eval";
+import { chunkId, drift, fix, score, summarize, toQrels, validate } from "retrieval-eval";
 
 const result = drift(judgments, corpus);
 if (result.summary.invalid_ratio > 0.1) throw new Error("golden set has decayed");
+
+// Repeated samples of a non-deterministic judge, as a measurement with error bars.
+report.metrics.faithfulness = summarize([0.8, 1.0, 0.6, 0.9, 0.7]);
 ```
 
 ```python
-from retrieval_eval import chunk_id, drift, fix, score, to_qrels, validate
+from retrieval_eval import chunk_id, drift, fix, score, summarize, to_qrels, validate
 
 result = drift(judgments, corpus)
 if result.summary.invalid_ratio > 0.1:
     raise RuntimeError("golden set has decayed")
+
+report.metrics["faithfulness"] = summarize([0.8, 1.0, 0.6, 0.9, 0.7])
 ```
+
+`summarize` returns a 95% Student-t interval on the sample mean. It is not clamped to the
+metric's range: raising a negative lower bound to 0 would let a `ci-lower` gate pass. A single
+sample returns `n=1` and **no** interval, so a `ci-lower` gate over it is `INDETERMINATE`
+rather than a quiet pass. When no query has a label at the threshold, `score` omits the
+averages and the verdict is `INDETERMINATE` instead of reporting 0.

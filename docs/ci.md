@@ -27,132 +27,36 @@ sometimes need `--threshold 2` to mean what you think `recall` means.
 
 ## Keeping a baseline
 
-A delta gate needs a previous report. Three workable strategies:
+A delta gate needs a previous report. The three workable strategies, and their trade-offs, are in
+[examples/pipelines](../examples/pipelines#keeping-a-baseline). Whichever you pick, treat a
+baseline change as a reviewable event: a gate whose baseline updates itself on failure is not a
+gate.
 
-| Strategy | How | Trade-off |
-|---|---|---|
-| Commit it | `eval/baseline.json` in the repo, updated in the PR that moves it | visible in review, one more file to rebase |
-| Build artifact | publish `report.json` from the default branch, download it in the PR job | no repo noise, needs an artifact retention window longer than your slowest PR |
-| Package registry | store reports alongside releases | durable, more moving parts |
+## Complete jobs, ready to copy
 
-Whichever you pick, treat a baseline change as a reviewable event. A gate whose baseline is
-updated automatically on failure is not a gate.
+Each system has a whole working file in [examples/pipelines](../examples/pipelines) rather than a
+fragment here:
 
-## GitHub Actions
+| File | System |
+|---|---|
+| [`Jenkinsfile`](../examples/pipelines/Jenkinsfile) | Jenkins, with exit `1` and exit `2` handled separately |
+| [`github-actions.yml`](../examples/pipelines/github-actions.yml) | GitHub Actions, commenting the numbers on the pull request |
+| [`gitlab-ci.yml`](../examples/pipelines/gitlab-ci.yml) | GitLab CI |
+| [`azure-pipelines.yml`](../examples/pipelines/azure-pipelines.yml) | Azure Pipelines |
+| [`circleci-config.yml`](../examples/pipelines/circleci-config.yml) | CircleCI |
+| [`pre-commit-config.yaml`](../examples/pipelines/pre-commit-config.yaml) | pre-commit |
+| [`nightly-drift-pr.yml`](../examples/pipelines/nightly-drift-pr.yml) | a scheduled re-anchor that opens a pull request |
 
-```yaml
-name: Retrieval quality
-on: [pull_request]
-
-jobs:
-  retrieval:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Labels still describe the corpus
-        run: npx retrieval-eval drift --judgments eval/judgments.jsonl --corpus eval/corpus.json
-
-      - name: Retrieval did not regress
-        run: |
-          npx retrieval-eval score \
-            --judgments eval/judgments.jsonl --run eval/hits.jsonl -k 5 \
-            --baseline eval/baseline.json \
-            --gate recall@5:-0.02 \
-            --gate worst-stratum:recall@5:0.7 \
-            --out report.json
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: retrieval-report
-          path: report.json
-```
-
-`if: always()` matters: the report is most useful on the run that failed.
-
-## GitLab CI
+The shortest useful version, for orientation:
 
 ```yaml
-retrieval:
-  image: python:3.12-slim
-  before_script:
-    - pip install retrieval-eval
-  script:
-    - retrieval-eval drift --judgments eval/judgments.jsonl --corpus eval/corpus.json
-    - >
-      retrieval-eval score
-      --judgments eval/judgments.jsonl --run eval/hits.jsonl -k 5
-      --baseline eval/baseline.json
-      --gate recall@5:-0.02 --gate worst-stratum:recall@5:0.7
-      --out report.json
-  artifacts:
-    when: always
-    paths: [report.json]
-```
-
-## CircleCI
-
-```yaml
-jobs:
-  retrieval:
-    docker: [{ image: cimg/python:3.12 }]
-    steps:
-      - checkout
-      - run: pip install retrieval-eval
-      - run: retrieval-eval drift --judgments eval/judgments.jsonl --corpus eval/corpus.json
-      - run: |
-          retrieval-eval score \
-            --judgments eval/judgments.jsonl --run eval/hits.jsonl -k 5 \
-            --gate worst-stratum:recall@5:0.7 --out report.json
-      - store_artifacts: { path: report.json }
-```
-
-## Jenkins
-
-```groovy
-stage('Retrieval quality') {
-  steps {
-    sh 'pip install --quiet retrieval-eval'
-    sh 'retrieval-eval drift --judgments eval/judgments.jsonl --corpus eval/corpus.json'
-    sh '''retrieval-eval score \
+- run: npx retrieval-eval drift --judgments eval/judgments.jsonl --corpus eval/corpus.json
+- run: |
+    npx retrieval-eval score \
       --judgments eval/judgments.jsonl --run eval/hits.jsonl -k 5 \
-      --gate worst-stratum:recall@5:0.7 --out report.json'''
-  }
-  post { always { archiveArtifacts artifacts: 'report.json' } }
-}
-```
-
-## Azure Pipelines
-
-```yaml
-- script: pip install retrieval-eval
-  displayName: Install
-- script: retrieval-eval drift --judgments eval/judgments.jsonl --corpus eval/corpus.json
-  displayName: Judgment drift
-- script: >
-    retrieval-eval score
-    --judgments eval/judgments.jsonl --run eval/hits.jsonl -k 5
-    --gate worst-stratum:recall@5:0.7 --out report.json
-  displayName: Retrieval gates
-```
-
-## pre-commit
-
-Cheap enough to run on every commit that touches the judgment set.
-
-```yaml
-repos:
-  - repo: local
-    hooks:
-      - id: retrieval-eval-validate
-        name: validate relevance judgments
-        entry: retrieval-eval validate --judgments
-        language: system
-        files: ^eval/judgments\.jsonl$
+      --baseline eval/baseline.json \
+      --gate "recall@5:-0.02" --gate "worst-stratum:recall@5:0.7" \
+      --out report.json
 ```
 
 ## Reading the exit code

@@ -13,6 +13,9 @@ These mean the tool could not answer the question, not that the answer was bad.
 | `-k expects a positive integer` | `-k 0` or a non-numeric cutoff | `@k` metrics need `k >= 1` |
 | `--color expects auto, always or never` | an unsupported colour mode | use one of the three, or set `NO_COLOR` |
 | `unknown --to 'x'` | an unsupported conversion target | `qrels`, `trec-run` or `judgments` |
+| `run:N: duplicate entry for query X, already on line M` | two run entries claim the same query | the file no longer says what that query's ranking is; emit one entry per query |
+| `run:N: ranking[i] must be a non-empty string` | a ranking holds a number, `null` or an object | emit the `chunk_id` or `doc_uri` as a string; an unchecked run is how a metric goes out of range |
+| `gate '...': 'x' is not a number` | a threshold with trailing characters, or `nan`/`infinity` | thresholds are finite decimals; `0.8`, `-0.02`, `1e-1` and `.5` all work |
 | a parse failure naming a line | malformed JSONL | the line number is in the message; a trailing comma or a truncated write is the usual cause |
 
 ## Validation codes
@@ -44,6 +47,18 @@ These mean the tool could not answer the question, not that the answer was bad.
 Warnings exit `0` on purpose. They describe a judgment set that is unsound rather than invalid,
 and that distinction is the point: a file can parse perfectly and still be unable to support the
 claim you are about to make with it.
+
+## Verdict reasons
+
+`score` prints these under the metrics, whether or not a gate was asked for.
+
+| Reason | Means | What to do |
+|---|---|---|
+| `N queries repeated a key in their ranking; only the first occurrence of each was counted` | a retriever returned the same `chunk_id` or `doc_uri` more than once for a query | the metrics are already correct — a repeat is not new evidence — but the duplicate is usually a real bug in a hybrid or multi-query retriever that unions results without deduplicating |
+| `the judgment set is unsound (...); run 'retrieval-eval validate' for detail` | the judgments carry a validation **error**, so the verdict is `INDETERMINATE` | fix the labels. A number computed from ground truth that contradicts itself cannot be trusted, and a passing gate over it has proved nothing |
+| `N% of judgments no longer match the live corpus` | `--corpus` was given and labels have decayed | `retrieval-eval drift --fix`, then re-judge what it leaves alone |
+| `N judged queries had no run entry and scored zero` | the run is missing queries the judgments cover | usually a truncated run file; scoring them zero is deliberate, because dropping them inflates every metric |
+| `N judged queries have no label at relevance >= T and were excluded` | those queries have nothing relevant to find | expected for unanswerable queries; they are excluded rather than scored zero |
 
 ## Common situations
 
