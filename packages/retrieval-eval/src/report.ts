@@ -4,7 +4,7 @@ import { score, scoreByStratum } from "./metrics.js";
 import type { Corpus, DriftResult, Judgment, Report, RunEntry } from "./types.js";
 
 export const TOOL_NAME = "retrieval-eval";
-export const TOOL_VERSION = "0.1.0";
+export const TOOL_VERSION = "0.1.1";
 export const SPEC_VERSION = "1" as const;
 
 export interface BuildReportOptions extends MetricOptions {

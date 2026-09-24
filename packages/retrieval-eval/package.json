@@ -1,6 +1,6 @@
 {
   "name": "retrieval-eval",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Your RAG test suite decays every time you re-chunk. Drift detection that tells you which relevance labels are still true after a chunker or corpus change and re-anchors the ones it can, plus deterministic retrieval metrics and a portable, TREC qrels-compatible judgment format. Zero dependencies, no API key.",
   "keywords": [
     "rag",

@@ -25,7 +25,7 @@ def _as_ci(value: Any) -> tuple[float, float] | None:
 
 
 TOOL_NAME = "retrieval-eval"
-TOOL_VERSION = "0.1.0"
+TOOL_VERSION = "0.1.1"
 SPEC_VERSION = "1"
 
 

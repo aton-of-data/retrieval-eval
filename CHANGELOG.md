@@ -3,7 +3,40 @@
 Both packages release together under the same version: a spec version that means two different
 things in two registries defeats the point.
 
-## 0.1.0, unreleased
+## 0.1.1, 2026-09-24
+
+No change to the spec, the metrics or either CLI. This release exists to put both packages
+through the release pipeline end to end, which 0.1.0 did not manage for npm.
+
+### Changed
+
+- **npm publishes through trusted publishing.** The release workflow authenticates to npm with
+  GitHub's OIDC token instead of a long-lived `NPM_TOKEN`, and every tarball carries a
+  provenance attestation linking it to the commit and workflow run that built it. PyPI already
+  worked this way.
+- **A release tag must match the version.** The workflow refuses to publish when `vX.Y.Z` does
+  not equal the version in all four places `scripts/check-version.mjs` checks.
+- **A tagged release creates the GitHub release**, with this changelog's entry as its notes.
+
+### Added
+
+- **A docs site**, https://aton-of-data.github.io/retrieval-eval/, rendered from the root README
+  by `scripts/build-site.mjs`. The README stays the single source; the site is derived from it.
+- **Version badges** for npm, PyPI and the supported Node and Python versions.
+
+### Dependencies
+
+Development and CI only: both packages still have zero runtime dependencies.
+
+- Biome 1.9 → 2.5, Vitest 2.1 → 4.1 (with Vite 8), TypeScript 5.6 → 5.9.
+- `actions/checkout`, `actions/setup-node` and `actions/setup-python` 4/5 → 7, and
+  `pnpm/action-setup` 4 → 6, `actions/upload-pages-artifact` 3 → 5 and `actions/deploy-pages`
+  4 → 5, all of which move the actions onto the Node 24 runtime.
+- **Held back:** TypeScript 7, Vitest 5, Changesets 3 and `@types/node` 26. Each either drops
+  Node 20, which is still supported and tested, or breaks the declaration build. The reasons are
+  recorded beside the ignore rules in `.github/dependabot.yml`.
+
+## 0.1.0, 2026-09-24
 
 First release. The spec, and two reference implementations that prove it.
 

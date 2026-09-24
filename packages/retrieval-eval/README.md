@@ -291,7 +291,7 @@ anywhere, which is the point of a spec.
 
 ## Status
 
-**0.1.0, alpha.** The formats and the metric mathematics are what we intend to keep. The CLI
+**0.1.1, alpha.** The formats and the metric mathematics are what we intend to keep. The CLI
 surface may still move. The `c1:` and `t1:` hash prefixes exist so identity can be versioned
 without breaking existing judgment files.
 
