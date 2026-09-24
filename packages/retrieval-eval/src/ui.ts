@@ -7,13 +7,13 @@
 export type ColorWhen = "auto" | "always" | "never";
 
 const CODES = {
-  reset: "[0m",
-  dim: "[2m",
-  bold: "[1m",
-  red: "[31m",
-  green: "[32m",
-  yellow: "[33m",
-  cyan: "[36m",
+  reset: "\u001b[0m",
+  dim: "\u001b[2m",
+  bold: "\u001b[1m",
+  red: "\u001b[31m",
+  green: "\u001b[32m",
+  yellow: "\u001b[33m",
+  cyan: "\u001b[36m",
 } as const;
 
 export type Color = keyof typeof CODES;

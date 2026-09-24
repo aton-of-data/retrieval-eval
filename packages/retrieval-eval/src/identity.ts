@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 /** U+001F unit separator: joins canonical fields without colliding with real content. */
-const SEP = "";
+const SEP = "\u001f";
 
 /**
  * Normalize chunk text. Exactly three steps, in this order. Any deviation breaks
