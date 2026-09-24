@@ -7,9 +7,11 @@ collapsing the two is how noisy measurements get treated as evidence.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from .metrics import worst_stratum
 from .models import Status
 from .report import Report
 
@@ -45,11 +47,32 @@ class GateResult:
         return out
 
 
+#: Finite decimal numbers only.
+#:
+#: ``float`` accepts 'nan' and 'infinity', and JavaScript's ``parseFloat`` reads '0.5abc' as
+#: 0.5. Either way the two implementations disagree about what a gate means, and a threshold
+#: they cannot agree on is worse than no threshold at all.
+_NUMBER_RE = re.compile(r"^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$")
+
+
 def _parse_number(value: str, expression: str) -> float:
-    try:
-        return float(value)
-    except ValueError as error:
-        raise ValueError(f"gate '{expression}': '{value}' is not a number") from error
+    if not _NUMBER_RE.match(value):
+        raise ValueError(f"gate '{expression}': '{value}' is not a number")
+    return float(value)
+
+
+def worse_status(a: Status, b: Status) -> Status:
+    """Return the more serious of two verdicts: FAIL beats INDETERMINATE beats PASS.
+
+    A gate only knows about the numbers it was pointed at. It cannot clear a finding it never
+    looked at, such as a judgment set ``validate`` rejects, so a passing gate never upgrades a
+    verdict that was already worse.
+    """
+    if a == "FAIL" or b == "FAIL":
+        return "FAIL"
+    if a == "INDETERMINATE" or b == "INDETERMINATE":
+        return "INDETERMINATE"
+    return "PASS"
 
 
 def parse_gate(expression: str) -> Gate:
@@ -84,17 +107,13 @@ def _evaluate_gate(gate: Gate, report: Report, baseline: Report | None) -> GateR
     if gate.kind == "worst-stratum":
         if not report.per_stratum:
             return GateResult(gate.raw, "INDETERMINATE")
-        worst: tuple[str, float] | None = None
-        for name, stratum in report.per_stratum.items():
-            measurement = stratum.metrics.get(gate.metric)
-            if measurement is None:
-                continue
-            if worst is None or measurement.value < worst[1]:
-                worst = (name, measurement.value)
+        worst = worst_stratum(report.per_stratum, gate.metric)
         if worst is None:
             return GateResult(gate.raw, "INDETERMINATE")
         return GateResult(
-            gate.raw, "PASS" if worst[1] >= gate.threshold else "FAIL", observed=worst[1]
+            gate.raw,
+            "PASS" if worst.value >= gate.threshold else "FAIL",
+            observed=worst.value,
         )
 
     measurement = report.metrics.get(gate.metric)
@@ -128,8 +147,11 @@ def _evaluate_gate(gate: Gate, report: Report, baseline: Report | None) -> GateR
     )
 
 
-def _describe(gate: Gate, result: GateResult) -> str:
+def _describe(gate: Gate, result: GateResult, report: Report) -> str:
     if result.status == "INDETERMINATE":
+        nothing_scored = report.judgments.get("queries_scored") == 0 and result.observed is None
+        if nothing_scored and gate.kind != "worst-stratum":
+            return f"{gate.raw}: no query was scored, so '{gate.metric}' was not computed"
         if gate.kind == "ci-lower":
             return (
                 f"{gate.raw}: no confidence interval on '{gate.metric}', sample it more than once"
@@ -137,17 +159,25 @@ def _describe(gate: Gate, result: GateResult) -> str:
         if gate.kind == "delta":
             return f"{gate.raw}: no baseline value for '{gate.metric}'"
         if gate.kind == "worst-stratum":
+            strata = report.per_stratum or {}
+            if strata and all(stratum.n == 0 for stratum in strata.values()):
+                return f"{gate.raw}: no stratum was scored for '{gate.metric}'"
             return f"{gate.raw}: no per-stratum data for '{gate.metric}'"
         return f"{gate.raw}: metric '{gate.metric}' not present in the report"
 
     observed = result.observed or 0.0
     if gate.kind == "delta":
         previous = result.baseline or 0.0
+        change = observed - previous
+        direction = f"fell {-change:.4f}" if change < 0 else f"rose {change:.4f}"
         return (
-            f"{gate.metric} fell {previous - observed:.4f}, from {previous:.4f} to {observed:.4f}"
+            f"{gate.metric} {direction}, from {previous:.4f} to {observed:.4f}, "
+            f"outside {gate.threshold}"
         )
     if gate.kind == "worst-stratum":
         return f"worst stratum {gate.metric} is {observed:.4f}, below {gate.threshold}"
+    if gate.kind == "ci-lower":
+        return f"{gate.metric} lower bound is {observed:.4f}, below {gate.threshold}"
     return f"{gate.metric} is {observed:.4f}, below {gate.threshold}"
 
 
@@ -171,7 +201,7 @@ def evaluate_gates(
         result = _evaluate_gate(gate, report, baseline)
         results.append(result)
         if result.status in ("FAIL", "INDETERMINATE"):
-            reasons.append(_describe(gate, result))
+            reasons.append(_describe(gate, result, report))
 
     if any(r.status == "FAIL" for r in results):
         status: Status = "FAIL"

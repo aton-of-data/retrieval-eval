@@ -140,8 +140,10 @@ def build_report(
         corpus_info["documents"] = len({c.doc_uri for c in corpus.chunks})
         corpus_info["chunks"] = len(corpus.chunks)
 
+    queries_scored = validation.queries - len(scored.queries_without_positives)
     judgments_info: dict[str, Any] = {
         "queries": validation.queries,
+        "queries_scored": queries_scored,
         "labels": validation.labels,
         "fingerprint": validation.fingerprint,
         "human_labels": validation.human_labels,
@@ -156,17 +158,53 @@ def build_report(
     if drift_result is not None and drift_result.summary.invalid_ratio > 0:
         percent = round(drift_result.summary.invalid_ratio * 100)
         reasons.append(f"{percent}% of judgments no longer match the live corpus")
-    if scored.missing_queries:
+    # A query with no label at the threshold is excluded, not scored. Only the ones that were
+    # actually averaged can have "scored zero" said of them.
+    missing_and_scored = [
+        query_id
+        for query_id in scored.missing_queries
+        if query_id not in scored.queries_without_positives
+    ]
+    if missing_and_scored:
+        reasons.append(f"{len(missing_and_scored)} judged queries had no run entry and scored zero")
+    if scored.queries_without_positives and queries_scored > 0:
         reasons.append(
-            f"{len(scored.missing_queries)} judged queries had no run entry and scored zero"
+            f"{len(scored.queries_without_positives)} judged queries have no label at "
+            f"relevance >= {threshold} and were excluded from the averages"
+        )
+    if queries_scored == 0:
+        if validation.queries == 0:
+            reasons.append("no judged queries, so no metric was computed")
+        else:
+            reasons.append(
+                f"no query had a label at relevance >= {threshold}, so no metric was computed"
+            )
+    # The numbers above already count a repeated key once. Saying so keeps the correction
+    # visible: a quiet fix to someone's ranking is its own kind of wrong number.
+    if scored.queries_with_duplicates:
+        reasons.append(
+            f"{len(scored.queries_with_duplicates)} queries repeated a key in their ranking; "
+            "only the first occurrence of each was counted"
+        )
+    # `validate` calls these errors and exits non-zero on them. Scoring the same set and
+    # reporting PASS is exactly the measurement lie this tool exists to expose, so the verdict
+    # cannot be PASS either. Warnings are left to `validate`, which is where they belong.
+    validation_errors = [i for i in validation.issues if i.severity == "error"]
+    if validation_errors:
+        codes = sorted({issue.code for issue in validation_errors})
+        reasons.append(
+            f"the judgment set is unsound ({', '.join(codes)}); run 'retrieval-eval validate' "
+            "for detail. No metric computed from it can be trusted"
         )
 
+    # An empty scored set is not a pass: there is no number, so the verdict cannot be PASS.
+    status: Status = "INDETERMINATE" if queries_scored == 0 or validation_errors else "PASS"
     return Report(
         generated_at=(now or datetime.now(timezone.utc)).isoformat().replace("+00:00", "Z"),
         corpus=corpus_info,
         judgments=judgments_info,
         metrics=scored.metrics,
-        verdict=Verdict(status="PASS", reasons=reasons),
+        verdict=Verdict(status=status, reasons=reasons),
         per_stratum=score_by_stratum(judgments, run, k=k, threshold=threshold)
         if has_strata
         else None,

@@ -9,11 +9,13 @@ export { chunkId, normalize, textSha } from "./identity.js";
 export type { ChunkIdInput } from "./identity.js";
 
 export {
+  dedupe,
   judgmentKey,
   queryMetrics,
   relevanceByQuery,
   score,
   scoreByStratum,
+  summarize,
   worstStratum,
 } from "./metrics.js";
 export type { MetricOptions, QueryMetrics, ScoreResult, StratumScore } from "./metrics.js";
@@ -33,7 +35,7 @@ export type { FromQrelsOptions } from "./qrels.js";
 export { drift, fix } from "./drift.js";
 export type { DriftOptions, FixResult } from "./drift.js";
 
-export { evaluateGates, parseGate } from "./gate.js";
+export { evaluateGates, parseGate, worseStatus } from "./gate.js";
 export type { EvaluateGatesOptions, Gate } from "./gate.js";
 
 export { buildReport, SPEC_VERSION, TOOL_NAME, TOOL_VERSION } from "./report.js";

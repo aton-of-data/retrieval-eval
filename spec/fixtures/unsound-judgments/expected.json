@@ -1,0 +1,19 @@
+{
+  "k": 2,
+  "note": "Alice and Bob disagree about d1. `validate` calls that an error and exits non-zero, so `score` cannot look at the same file, resolve the conflict last-wins and report PASS. The verdict is INDETERMINATE: there is a number, but the ground truth it was computed from contradicts itself, and a gate that passes over it has proved nothing.",
+  "validate": {
+    "ok": false,
+    "error_codes": ["duplicate-label"]
+  },
+  "queries": 1,
+  "queries_scored": 1,
+  "verdict": "INDETERMINATE",
+  "reason": "the judgment set is unsound (duplicate-label); run 'retrieval-eval validate' for detail. No metric computed from it can be trusted",
+  "gate": {
+    "expression": "recall@2:0.1",
+    "gate_status": "PASS",
+    "note": "The gate itself passes. The verdict does not, because a gate cannot clear a finding it never looked at.",
+    "verdict": "INDETERMINATE",
+    "exit_code": 1
+  }
+}

@@ -17,6 +17,15 @@ export interface FromQrelsOptions {
   labeledBy?: string;
 }
 
+/**
+ * Read qrels in either shape that exists in the wild:
+ *
+ *   `query_id iteration doc_id relevance`  the TREC form, 4 columns
+ *   `query-id  corpus-id  score`           the BEIR form, 3 columns with a header row
+ *
+ * Accepting only the first means not being able to read BEIR or `ir_datasets` exports, which
+ * is most of the reason to speak qrels at all.
+ */
 export function fromQrels(content: string, options: FromQrelsOptions = {}): Judgment[] {
   const out: Judgment[] = [];
   const lines = content.split("\n");
@@ -24,11 +33,18 @@ export function fromQrels(content: string, options: FromQrelsOptions = {}): Judg
     const line = (lines[i] as string).trim();
     if (line === "" || line.startsWith("#")) continue;
     const parts = line.split(/\s+/);
-    if (parts.length < 4) throw new Error(`qrels:${i + 1}: expected 4 fields, got ${parts.length}`);
-    const [queryId, , docId, relevance] = parts as [string, string, string, string];
+    if (parts.length < 3)
+      throw new Error(`qrels:${i + 1}: expected 3 or 4 fields, got ${parts.length}`);
+
+    const [queryId, second, third, fourth] = parts as [string, string, string, string?];
+    const docId = parts.length >= 4 ? third : second;
+    const relevance = parts.length >= 4 ? (fourth as string) : third;
     const parsed = Number.parseInt(relevance, 10);
-    if (Number.isNaN(parsed))
+    if (Number.isNaN(parsed)) {
+      // The BEIR header, `query-id corpus-id score`, is a row only by accident of format.
+      if (out.length === 0 && /^query[-_ ]?id$/i.test(queryId)) continue;
       throw new Error(`qrels:${i + 1}: relevance '${relevance}' is not an integer`);
+    }
 
     const judgment: Judgment = {
       query_id: queryId,

@@ -1,0 +1,23 @@
+{
+  "note": "The query ids arrive unsorted and none carries query text, so every one raises `missing-query-text`. An ordering that reaches `--json` and the rendered report is part of what the two implementations must agree on, so both emit these sorted by Unicode code point rather than in file order. The strata are unsorted too, for the same reason: `thin-stratum` follows sorted order, not insertion order.",
+  "issue_order": [
+    "missing-query-text:q1",
+    "missing-query-text:q2",
+    "missing-query-text:q3",
+    "thin-stratum:alpha",
+    "thin-stratum:zeta",
+    "no-chunk-ids"
+  ],
+  "missing_query_text_order": [
+    "q1",
+    "q2",
+    "q3"
+  ],
+  "thin_stratum_order": [
+    "alpha",
+    "zeta"
+  ],
+  "ok": true,
+  "queries": 3,
+  "labels": 3
+}

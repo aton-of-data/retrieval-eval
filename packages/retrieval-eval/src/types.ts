@@ -63,6 +63,8 @@ export interface Report {
   corpus: { fingerprint: string | null; documents?: number; chunks?: number };
   judgments: {
     queries: number;
+    /** Queries the averages were computed from: those with at least one label at the threshold. */
+    queries_scored: number;
     labels: number;
     fingerprint: string | null;
     human_labels?: number;

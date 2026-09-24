@@ -1,0 +1,5 @@
+{"query_id": "q1", "query": "beta query", "doc_uri": "d1", "relevance": 2, "labeled_by": "human:fixture", "stratum": "Beta"}
+{"query_id": "q2", "query": "alpha query", "doc_uri": "d2", "relevance": 2, "labeled_by": "human:fixture", "stratum": "alpha"}
+{"query_id": "q3", "query": "m query", "doc_uri": "d3", "relevance": 2, "labeled_by": "human:fixture", "stratum": "m"}
+{"query_id": "q4", "query": "zeta query", "doc_uri": "d4", "relevance": 1, "labeled_by": "human:fixture", "stratum": "zeta"}
+{"query_id": "q5", "query": "etude query", "doc_uri": "d5", "relevance": 1, "labeled_by": "human:fixture", "stratum": "étude"}

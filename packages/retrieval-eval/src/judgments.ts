@@ -1,13 +1,19 @@
 import type { Corpus, Judgment, RunEntry } from "./types.js";
 
-function parseJsonl<T>(content: string, label: string): T[] {
-  const out: T[] = [];
+/** A parsed row, with the line it came from: an error that points at the wrong line is noise. */
+interface Row<T> {
+  value: T;
+  line: number;
+}
+
+function parseJsonl<T>(content: string, label: string): Row<T>[] {
+  const out: Row<T>[] = [];
   const lines = content.split("\n");
   for (let i = 0; i < lines.length; i++) {
     const line = (lines[i] as string).trim();
     if (line === "" || line.startsWith("//")) continue;
     try {
-      out.push(JSON.parse(line) as T);
+      out.push({ value: JSON.parse(line) as T, line: i + 1 });
     } catch (error) {
       throw new Error(`${label}:${i + 1}: invalid JSON, ${(error as Error).message}`);
     }
@@ -17,28 +23,104 @@ function parseJsonl<T>(content: string, label: string): T[] {
 
 export function parseJudgments(content: string, label = "judgments"): Judgment[] {
   const rows = parseJsonl<Judgment>(content, label);
-  for (const [i, row] of rows.entries()) {
-    if (typeof row.query_id !== "string" || row.query_id === "")
-      throw new Error(`${label}:${i + 1}: missing query_id`);
-    if (typeof row.doc_uri !== "string" || row.doc_uri === "")
-      throw new Error(`${label}:${i + 1}: missing doc_uri`);
-    if (!Number.isInteger(row.relevance) || row.relevance < 0)
-      throw new Error(`${label}:${i + 1}: relevance must be a non-negative integer`);
+  for (const { value, line } of rows) {
+    if (typeof value.query_id !== "string" || value.query_id === "")
+      throw new Error(`${label}:${line}: missing query_id`);
+    if (typeof value.doc_uri !== "string" || value.doc_uri === "")
+      throw new Error(`${label}:${line}: missing doc_uri`);
+    if (!Number.isInteger(value.relevance) || value.relevance < 0)
+      throw new Error(`${label}:${line}: relevance must be a non-negative integer`);
   }
-  return rows;
+  return rows.map((row) => row.value);
 }
 
+/**
+ * Parse a run JSONL file.
+ *
+ * The run is the one input that used to be taken on trust, and an unchecked run is how a
+ * metric goes out of range: a ranking holding a non-string, or two entries claiming the same
+ * query, produce numbers that mean nothing and say nothing about it.
+ *
+ * Two entries for one query are rejected rather than resolved, because the file no longer says
+ * what the ranking for that query is, and picking one silently is a guess. A key repeated
+ * *within* one ranking is a different thing: the ranking is still unambiguous, so it is
+ * accepted here and counted once by `score`, which reports that it did.
+ */
 export function parseRun(content: string, label = "run"): RunEntry[] {
   const rows = parseJsonl<RunEntry>(content, label);
-  for (const [i, row] of rows.entries()) {
-    if (typeof row.query_id !== "string") throw new Error(`${label}:${i + 1}: missing query_id`);
-    if (!Array.isArray(row.ranking)) throw new Error(`${label}:${i + 1}: ranking must be an array`);
+  const firstSeen = new Map<string, number>();
+  for (const { value, line } of rows) {
+    if (typeof value.query_id !== "string" || value.query_id === "")
+      throw new Error(`${label}:${line}: missing query_id`);
+    if (!Array.isArray(value.ranking))
+      throw new Error(`${label}:${line}: ranking must be an array`);
+    for (let i = 0; i < value.ranking.length; i++) {
+      const key = value.ranking[i];
+      if (typeof key !== "string" || key === "")
+        throw new Error(`${label}:${line}: ranking[${i}] must be a non-empty string`);
+    }
+    const previous = firstSeen.get(value.query_id);
+    if (previous !== undefined)
+      throw new Error(
+        `${label}:${line}: duplicate entry for query ${value.query_id}, already on line ${previous}`,
+      );
+    firstSeen.set(value.query_id, line);
   }
-  return rows;
+  return rows.map((row) => row.value);
 }
 
+/**
+ * Compare by Unicode code point, which is what Python's `sorted` does.
+ *
+ * JavaScript's default sort compares UTF-16 code units, and the two disagree for anything
+ * above the basic multilingual plane. Anywhere an ordering reaches the output, the two
+ * implementations have to agree on it, so both sort the same way.
+ */
+export function byCodePoint(a: string, b: string): number {
+  const left = [...a];
+  const right = [...b];
+  for (let i = 0; i < Math.min(left.length, right.length); i++) {
+    const difference =
+      ((left[i] as string).codePointAt(0) ?? 0) - ((right[i] as string).codePointAt(0) ?? 0);
+    if (difference !== 0) return difference;
+  }
+  return left.length - right.length;
+}
+
+/**
+ * The canonical field order from the schema. Both implementations emit it, so a file written by
+ * one is byte-identical to the same file written by the other, and `drift --fix` produces a diff
+ * of the labels that changed rather than of the whole file.
+ */
+const FIELD_ORDER = [
+  "query_id",
+  "query",
+  "doc_uri",
+  "chunk_id",
+  "text_sha",
+  "chunk_text",
+  "relevance",
+  "corpus_fingerprint",
+  "labeled_by",
+  "labeled_at",
+  "stratum",
+  "notes",
+] as const;
+
 export function serializeJudgments(judgments: Judgment[]): string {
-  return `${judgments.map((j) => JSON.stringify(j)).join("\n")}\n`;
+  const lines = judgments.map((judgment) => {
+    const ordered: Record<string, unknown> = {};
+    for (const field of FIELD_ORDER) {
+      if (judgment[field] !== undefined) ordered[field] = judgment[field];
+    }
+    // Unknown fields keep their own order and come last: the spec requires round-tripping
+    // fields an implementation does not understand.
+    for (const [key, value] of Object.entries(judgment)) {
+      if (!(FIELD_ORDER as readonly string[]).includes(key)) ordered[key] = value;
+    }
+    return JSON.stringify(ordered);
+  });
+  return `${lines.join("\n")}\n`;
 }
 
 export function parseCorpus(content: string, label = "corpus"): Corpus {
@@ -131,7 +213,9 @@ export function validate(judgments: Judgment[]): ValidationResult {
     }
   }
 
-  for (const queryId of queries) {
+  // Sorted, not insertion order: this ordering reaches `--json` and the rendered report,
+  // so it is part of what the two implementations must agree on.
+  for (const queryId of [...queries].sort(byCodePoint)) {
     if (!queryText.has(queryId)) {
       issues.push({
         severity: "warning",
@@ -167,7 +251,7 @@ export function validate(judgments: Judgment[]): ValidationResult {
       message: `judgments span ${fingerprints.size} corpus fingerprints; run 'drift' before trusting any metric`,
     });
   }
-  for (const [name, count] of Object.entries(strata)) {
+  for (const [name, count] of Object.entries(strata).sort(([a], [b]) => byCodePoint(a, b))) {
     if (name !== "_unstratified" && count < 5) {
       issues.push({
         severity: "warning",

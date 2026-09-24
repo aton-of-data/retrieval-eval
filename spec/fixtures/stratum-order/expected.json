@@ -1,0 +1,30 @@
+{
+  "k": 3,
+  "threshold": 2,
+  "note": "Five strata chosen so that code-point order and locale collation disagree. Scored at threshold 2, Beta/alpha/m all reach recall 1.0 and tie, so the table falls back to the name; zeta and etude have nothing at the threshold and are listed after, unscored. JavaScript's localeCompare orders these by locale, which disagrees with Python and reorders them again on a machine with a different locale. Both implementations sort by Unicode code point, which is locale-independent and is what Python's sorted does.",
+  "scored_order": [
+    "Beta",
+    "alpha",
+    "m"
+  ],
+  "unscored_order": [
+    "zeta",
+    "étude"
+  ],
+  "per_stratum_n": {
+    "Beta": 1,
+    "alpha": 1,
+    "m": 1,
+    "zeta": 0,
+    "étude": 0
+  },
+  "metrics": {
+    "recall@3": 1.0,
+    "precision@3": 0.333333333333,
+    "ndcg@3": 1.0,
+    "mrr@3": 1.0,
+    "map@3": 1.0,
+    "hit_rate@3": 1.0
+  },
+  "locale_order_is_not_asserted": "Collation order varies by machine, which is the objection to it; only the code-point orders above are normative."
+}

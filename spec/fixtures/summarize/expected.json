@@ -1,0 +1,53 @@
+{
+  "note": "95% Student-t interval on the sample mean, with the sample standard deviation (n-1). A single sample yields no interval at all, because one draw from a non-deterministic instrument is not evidence of a spread. The interval is not clamped: raising a negative lower bound to 0 would let a ci-lower gate pass.",
+  "cases": {
+    "five_samples_of_one_triple": {
+      "samples": [0.8, 1.0, 0.6, 0.9, 0.7],
+      "expected": {
+        "value": 0.8,
+        "n": 5,
+        "stdev": 0.158113883008,
+        "ci": [0.603675683852, 0.996324316148],
+        "deterministic": false
+      }
+    },
+    "single_sample_has_no_interval": {
+      "samples": [0.82],
+      "expected": {
+        "value": 0.82,
+        "n": 1,
+        "deterministic": false
+      }
+    },
+    "identical_samples_have_a_zero_width_interval": {
+      "samples": [0.9, 0.9, 0.9],
+      "expected": {
+        "value": 0.9,
+        "n": 3,
+        "stdev": 0.0,
+        "ci": [0.9, 0.9],
+        "deterministic": false
+      }
+    },
+    "interval_is_not_clamped_to_the_metric_range": {
+      "samples": [0.95, 1.0, 1.0, 0.99],
+      "expected": {
+        "value": 0.985,
+        "n": 4,
+        "stdev": 0.023804761428,
+        "ci": [0.947121312472, 1.022878687528],
+        "deterministic": false
+      }
+    },
+    "lower_bound_may_fall_below_zero": {
+      "samples": [0.0, 0.0, 1.0],
+      "expected": {
+        "value": 0.333333333333,
+        "n": 3,
+        "stdev": 0.57735026919,
+        "ci": [-1.10088424325, 1.767550909916],
+        "deterministic": false
+      }
+    }
+  }
+}

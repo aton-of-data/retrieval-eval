@@ -1,0 +1,3 @@
+{"query_id": "q1", "query": "how do I reset my password", "doc_uri": "d1", "relevance": 2, "labeled_by": "human:fixture"}
+{"query_id": "q1", "query": "how do I reset my password", "doc_uri": "d2", "relevance": 1, "labeled_by": "human:fixture"}
+{"query_id": "q2", "query": "where is my invoice", "doc_uri": "d3", "relevance": 2, "labeled_by": "human:fixture"}

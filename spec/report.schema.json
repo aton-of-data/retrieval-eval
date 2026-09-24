@@ -4,14 +4,25 @@
   "title": "retrieval-eval report",
   "description": "Results any tool may emit and any CI or dashboard may ingest.",
   "type": "object",
-  "required": ["spec_version", "tool", "generated_at", "corpus", "judgments", "metrics", "verdict"],
+  "required": [
+    "spec_version",
+    "tool",
+    "generated_at",
+    "corpus",
+    "judgments",
+    "metrics",
+    "verdict"
+  ],
   "properties": {
     "spec_version": {
       "const": "1"
     },
     "tool": {
       "type": "object",
-      "required": ["name", "version"],
+      "required": [
+        "name",
+        "version"
+      ],
       "properties": {
         "name": {
           "type": "string"
@@ -29,7 +40,10 @@
       "type": "object",
       "properties": {
         "fingerprint": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "documents": {
           "type": "integer"
@@ -41,16 +55,27 @@
     },
     "judgments": {
       "type": "object",
-      "required": ["queries", "labels"],
+      "required": [
+        "queries",
+        "labels"
+      ],
       "properties": {
         "queries": {
           "type": "integer"
+        },
+        "queries_scored": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Queries the averages were computed from: those with at least one label at or above the relevance threshold. Queries with nothing relevant to find are excluded rather than scored zero."
         },
         "labels": {
           "type": "integer"
         },
         "fingerprint": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "human_labels": {
           "type": "integer"
@@ -87,7 +112,7 @@
       }
     },
     "metrics": {
-      "description": "Metric name (e.g. 'recall@5') to measurement.",
+      "description": "Metric name to measurement. Every cutoff metric carries its cutoff in the name: precision@k, recall@k, ndcg@k, mrr@k, map@k, hit_rate@k.",
       "type": "object",
       "additionalProperties": {
         "$ref": "#/$defs/measurement"
@@ -98,7 +123,9 @@
       "type": "object",
       "additionalProperties": {
         "type": "object",
-        "required": ["n"],
+        "required": [
+          "n"
+        ],
         "properties": {
           "n": {
             "type": "integer"
@@ -114,10 +141,16 @@
     },
     "verdict": {
       "type": "object",
-      "required": ["status"],
+      "required": [
+        "status"
+      ],
       "properties": {
         "status": {
-          "enum": ["PASS", "FAIL", "INDETERMINATE"]
+          "enum": [
+            "PASS",
+            "FAIL",
+            "INDETERMINATE"
+          ]
         },
         "reasons": {
           "type": "array",
@@ -129,19 +162,29 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["expression", "status"],
+            "required": [
+              "expression",
+              "status"
+            ],
             "properties": {
               "expression": {
                 "type": "string"
               },
               "status": {
-                "enum": ["PASS", "FAIL", "INDETERMINATE"]
+                "enum": [
+                  "PASS",
+                  "FAIL",
+                  "INDETERMINATE"
+                ]
               },
               "observed": {
                 "type": "number"
               },
               "baseline": {
-                "type": ["number", "null"]
+                "type": [
+                  "number",
+                  "null"
+                ]
               }
             }
           }
@@ -152,7 +195,9 @@
   "$defs": {
     "measurement": {
       "type": "object",
-      "required": ["value"],
+      "required": [
+        "value"
+      ],
       "properties": {
         "value": {
           "type": "number"

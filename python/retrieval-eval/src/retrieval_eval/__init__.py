@@ -15,7 +15,14 @@ the same fixtures in ``spec/fixtures``.
 from __future__ import annotations
 
 from .drift import FixResult, drift, fix
-from .gate import Gate, GateEvaluation, GateResult, evaluate_gates, parse_gate
+from .gate import (
+    Gate,
+    GateEvaluation,
+    GateResult,
+    evaluate_gates,
+    parse_gate,
+    worse_status,
+)
 from .identity import chunk_id, normalize, text_sha
 from .judgments import (
     ValidationIssue,
@@ -29,10 +36,13 @@ from .judgments import (
 from .metrics import (
     ScoreResult,
     StratumScore,
+    WorstStratum,
+    dedupe,
     query_metrics,
     relevance_by_query,
     score,
     score_by_stratum,
+    summarize,
     worst_stratum,
 )
 from .models import (
@@ -74,9 +84,11 @@ __all__ = [
     "ValidationIssue",
     "ValidationResult",
     "Verdict",
+    "WorstStratum",
     "__version__",
     "build_report",
     "chunk_id",
+    "dedupe",
     "drift",
     "evaluate_gates",
     "fix",
@@ -92,9 +104,11 @@ __all__ = [
     "score",
     "score_by_stratum",
     "serialize_judgments",
+    "summarize",
     "text_sha",
     "to_qrels",
     "to_trec_run",
     "validate",
+    "worse_status",
     "worst_stratum",
 ]

@@ -1,0 +1,4 @@
+# a TREC collection, with a comment and a negative grade
+q1 0 d3 1
+q1 0 d7 2
+q2 0 d4 -1

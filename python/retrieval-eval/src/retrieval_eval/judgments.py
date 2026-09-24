@@ -16,14 +16,19 @@ TEXT_SHA_RE = re.compile(r"^t1:[0-9a-f]{32}$")
 Severity = Literal["error", "warning"]
 
 
-def _parse_jsonl(content: str, label: str) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
+def _parse_jsonl(content: str, label: str) -> list[tuple[int, dict[str, Any]]]:
+    """Parse JSONL, keeping the line each row came from.
+
+    An error that points at the wrong line is noise, and blank or commented lines make the row
+    index and the line number diverge.
+    """
+    rows: list[tuple[int, dict[str, Any]]] = []
     for number, raw in enumerate(content.split("\n"), start=1):
         line = raw.strip()
         if not line or line.startswith("//"):
             continue
         try:
-            rows.append(json.loads(line))
+            rows.append((number, json.loads(line)))
         except json.JSONDecodeError as error:
             raise ValueError(f"{label}:{number}: invalid JSON, {error}") from error
     return rows
@@ -32,7 +37,7 @@ def _parse_jsonl(content: str, label: str) -> list[dict[str, Any]]:
 def parse_judgments(content: str, label: str = "judgments") -> list[Judgment]:
     """Parse a judgments JSONL file, failing loudly on the three required fields."""
     out: list[Judgment] = []
-    for number, row in enumerate(_parse_jsonl(content, label), start=1):
+    for number, row in _parse_jsonl(content, label):
         if not isinstance(row.get("query_id"), str) or not row["query_id"]:
             raise ValueError(f"{label}:{number}: missing query_id")
         if not isinstance(row.get("doc_uri"), str) or not row["doc_uri"]:
@@ -45,20 +50,45 @@ def parse_judgments(content: str, label: str = "judgments") -> list[Judgment]:
 
 
 def parse_run(content: str, label: str = "run") -> list[RunEntry]:
-    """Parse a run JSONL file."""
+    """Parse a run JSONL file.
+
+    The run is the one input that used to be taken on trust, and an unchecked run is how a
+    metric goes out of range: a ranking holding a non-string, or two entries claiming the same
+    query, produce numbers that mean nothing and say nothing about it.
+
+    Two entries for one query are rejected rather than resolved, because the file no longer says
+    what the ranking for that query is, and picking one silently is a guess. A key repeated
+    *within* one ranking is a different thing: the ranking is still unambiguous, so it is
+    accepted here and counted once by :func:`retrieval_eval.metrics.score`, which reports that
+    it did.
+    """
     out: list[RunEntry] = []
-    for number, row in enumerate(_parse_jsonl(content, label), start=1):
-        if not isinstance(row.get("query_id"), str):
+    first_seen: dict[str, int] = {}
+    for number, row in _parse_jsonl(content, label):
+        if not isinstance(row.get("query_id"), str) or not row["query_id"]:
             raise ValueError(f"{label}:{number}: missing query_id")
-        if not isinstance(row.get("ranking"), list):
+        ranking = row.get("ranking")
+        if not isinstance(ranking, list):
             raise ValueError(f"{label}:{number}: ranking must be an array")
-        out.append(RunEntry(query_id=row["query_id"], ranking=list(row["ranking"])))
+        for index, key in enumerate(ranking):
+            if not isinstance(key, str) or not key:
+                raise ValueError(f"{label}:{number}: ranking[{index}] must be a non-empty string")
+        previous = first_seen.get(row["query_id"])
+        if previous is not None:
+            raise ValueError(
+                f"{label}:{number}: duplicate entry for query {row['query_id']}, "
+                f"already on line {previous}"
+            )
+        first_seen[row["query_id"]] = number
+        out.append(RunEntry(query_id=row["query_id"], ranking=list(ranking)))
     return out
 
 
 def serialize_judgments(judgments: Iterable[Judgment]) -> str:
     """Serialize judgments back to JSONL."""
-    lines = [json.dumps(j.to_dict(), ensure_ascii=False) for j in judgments]
+    # Compact separators and the schema's field order, so a file written here is
+    # byte-identical to the same file written by the TypeScript implementation.
+    lines = [json.dumps(j.to_dict(), ensure_ascii=False, separators=(",", ":")) for j in judgments]
     return "\n".join(lines) + "\n"
 
 

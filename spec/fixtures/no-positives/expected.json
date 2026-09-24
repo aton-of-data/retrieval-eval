@@ -1,0 +1,17 @@
+{
+  "k": 3,
+  "note": "q2 has no label at relevance >= 1, so it is excluded from the averages rather than scored zero. Recall, nDCG, MRR and AP are undefined when there is nothing relevant to find.",
+  "queries": 2,
+  "queries_scored": 1,
+  "queries_without_positives": [
+    "q2"
+  ],
+  "metrics": {
+    "precision@3": 0.666666666667,
+    "recall@3": 1.0,
+    "ndcg@3": 0.963940433317,
+    "mrr@3": 1.0,
+    "map@3": 0.833333333333,
+    "hit_rate@3": 1.0
+  }
+}

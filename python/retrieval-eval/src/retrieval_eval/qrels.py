@@ -7,6 +7,7 @@ superset of it rather than a new idea.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Sequence
 
 from .models import Judgment, RunEntry
@@ -24,7 +25,15 @@ def from_qrels(
     corpus_fingerprint: str | None = None,
     labeled_by: str | None = None,
 ) -> list[Judgment]:
-    """Parse TREC qrels into judgments.
+    """Parse qrels into judgments.
+
+    Both shapes that exist in the wild are accepted::
+
+        query_id iteration doc_id relevance   the TREC form, 4 columns
+        query-id  corpus-id  score            the BEIR form, 3 columns with a header row
+
+    Accepting only the first means not being able to read BEIR or ``ir_datasets`` exports,
+    which is most of the reason to speak qrels at all.
 
     Args:
         content: The qrels file contents.
@@ -38,12 +47,17 @@ def from_qrels(
         if not line or line.startswith("#"):
             continue
         parts = line.split()
-        if len(parts) < 4:
-            raise ValueError(f"qrels:{number}: expected 4 fields, got {len(parts)}")
-        query_id, _iteration, doc_id, relevance = parts[0], parts[1], parts[2], parts[3]
+        if len(parts) < 3:
+            raise ValueError(f"qrels:{number}: expected 3 or 4 fields, got {len(parts)}")
+        query_id = parts[0]
+        doc_id = parts[2] if len(parts) >= 4 else parts[1]
+        relevance = parts[3] if len(parts) >= 4 else parts[2]
         try:
             parsed = int(relevance)
         except ValueError as error:
+            # The BEIR header, `query-id corpus-id score`, is a row only by accident of format.
+            if not out and re.fullmatch(r"query[-_ ]?id", query_id, re.IGNORECASE):
+                continue
             raise ValueError(
                 f"qrels:{number}: relevance '{relevance}' is not an integer"
             ) from error

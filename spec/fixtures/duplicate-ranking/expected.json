@@ -1,0 +1,56 @@
+{
+  "k": 5,
+  "note": "A retriever that returns the same key twice must not be paid twice for it. q1 returns d1 five times and finds one of two relevant documents, so recall is 0.5, not 2.5. Counted naively every repeat scores as a fresh hit and recall, map and ndcg all rise above 1.0, which can carry a failing run past a gate. Only the first occurrence counts, and the report names the queries it happened to rather than correcting them silently.",
+  "queries_with_duplicates": [
+    "q1",
+    "q2"
+  ],
+  "deduped_rankings": {
+    "q1": [
+      "d1"
+    ],
+    "q2": [
+      "d9",
+      "d3"
+    ]
+  },
+  "metrics": {
+    "precision@5": 0.2,
+    "recall@5": 0.75,
+    "ndcg@5": 0.72858220535,
+    "mrr@5": 0.75,
+    "map@5": 0.5,
+    "hit_rate@5": 1.0
+  },
+  "verdict": "PASS",
+  "reason": "2 queries repeated a key in their ranking; only the first occurrence of each was counted",
+  "rejected": {
+    "note": "These are malformed rather than merely unsound, so parse_run refuses them outright. Two entries for one query mean the file no longer says what that query's ranking is, and picking one silently would be a guess.",
+    "cases": [
+      {
+        "file": "run-duplicate-query.jsonl",
+        "message": "run:2: duplicate entry for query q1, already on line 1"
+      },
+      {
+        "file": "run-non-string-key.jsonl",
+        "message": "run:1: ranking[1] must be a non-empty string"
+      }
+    ]
+  },
+  "per_query": {
+    "q1": {
+      "note": "d1 five times: one of two relevant documents found, so recall is 0.5",
+      "recall": 0.5,
+      "precision": 0.2,
+      "mrr": 1.0,
+      "ap": 0.5
+    },
+    "q2": {
+      "note": "d9,d3 twice each: the one relevant document found at rank 2",
+      "recall": 1.0,
+      "precision": 0.2,
+      "mrr": 0.5,
+      "ap": 0.5
+    }
+  }
+}

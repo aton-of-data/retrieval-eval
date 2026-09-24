@@ -1,0 +1,3 @@
+{"query_id": "q3", "doc_uri": "d0", "relevance": 1, "labeled_by": "human:fixture"}
+{"query_id": "q1", "doc_uri": "d1", "relevance": 1, "labeled_by": "human:fixture", "stratum": "zeta"}
+{"query_id": "q2", "doc_uri": "d2", "relevance": 1, "labeled_by": "human:fixture", "stratum": "alpha"}

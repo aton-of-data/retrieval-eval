@@ -1,0 +1,14 @@
+{
+  "note": "Both files describe the same labels. The BEIR form is 3 columns with a header; the TREC form is 4 columns. A parser that accepts only one of them cannot read the collections it claims to read.",
+  "beir": [
+    { "query_id": "q1", "doc_uri": "d3", "relevance": 1 },
+    { "query_id": "q1", "doc_uri": "d7", "relevance": 2 },
+    { "query_id": "q2", "doc_uri": "d4", "relevance": 1 }
+  ],
+  "trec": [
+    { "query_id": "q1", "doc_uri": "d3", "relevance": 1 },
+    { "query_id": "q1", "doc_uri": "d7", "relevance": 2 },
+    { "query_id": "q2", "doc_uri": "d4", "relevance": 0 }
+  ],
+  "qrels_lines": ["q1 0 d3 1", "q1 0 d7 2", "q2 0 d4 1"]
+}
