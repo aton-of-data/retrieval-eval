@@ -3,6 +3,14 @@
 Both packages release together under the same version: a spec version that means two different
 things in two registries defeats the point.
 
+## Unreleased
+
+### Fixed
+
+- **`bin` is written as `dist/cli.js`**, the form npm normalizes to. npm 12 rewrote
+  `./dist/cli.js` on every publish and warned that the entry was invalid. Nothing was wrong with
+  the published command; the warning was.
+
 ## 0.1.1, 2026-09-24
 
 No change to the spec, the metrics or either CLI. This release exists to put both packages
